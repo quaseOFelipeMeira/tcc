@@ -23,6 +23,12 @@ def get_all(db: Session = Depends(get_db)):
     return types
 
 
+@router.get("/{id}", response_model=productTypeResponseSchema)
+def get_by_id(id: int, db: Session = Depends(get_db)):
+    types = db.query(ProductType).filter(ProductType.id == id).first()
+    return types
+
+
 @router.post("", response_model=productTypeSchema)
 def add(request: productTypeSchema, db: Session = Depends(get_db)):
 

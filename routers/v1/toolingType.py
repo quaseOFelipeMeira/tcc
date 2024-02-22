@@ -23,6 +23,12 @@ def get_all(db: Session = Depends(get_db)):
     return types
 
 
+@router.get("/{id}", response_model=descSchema)
+def get_by_id(id: int, db: Session = Depends(get_db)):
+    types = db.query(ToolingType).filter(ToolingType.id == id).first()
+    return types
+
+
 @router.post("", response_model=descSchema)
 def add(request: descSchema, db: Session = Depends(get_db)):
 

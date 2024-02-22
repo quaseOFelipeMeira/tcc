@@ -25,6 +25,12 @@ def get_all(db: Session = Depends(get_db)):
     return types
 
 
+@router.get("/{id}", response_model=toolingResponseSchema)
+def get_by_id(id: int, db: Session = Depends(get_db)):
+    types = db.query(Tooling).filter(Tooling.id == id).first()
+    return types
+
+
 @router.post("", response_model=toolingResponseSchema)
 def add(request: toolingSchema, db: Session = Depends(get_db)):
 
