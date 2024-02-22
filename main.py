@@ -31,4 +31,4 @@ app.include_router(v1.router)
 
 Base.metadata.create_all(engine)
 
-# uvicorn main:app --reload port 8000
+# uvicorn main:app --reload --port 8000

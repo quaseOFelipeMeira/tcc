@@ -7,38 +7,50 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from core.models import ToolingType
-from core.schemas import descSchema, descResponseSchema
+from core.models import Tooling
+from core.schemas import toolingSchema, toolingResponseSchema
+
+from datetime import date
 
 
 router = APIRouter(
-    tags=["Tooling Types"],
-    prefix="/toolingType",
+    tags=["Tooling"],
+    prefix="/tooling",
 )
 
 
-@router.get("", response_model=List[descResponseSchema])
+@router.get("", response_model=List[toolingResponseSchema])
 def get_all(db: Session = Depends(get_db)):
-    types = db.query(ToolingType).all()
+    types = db.query(Tooling).all()
     return types
 
 
-@router.post("", response_model=descSchema)
-def add(request: descSchema, db: Session = Depends(get_db)):
+@router.post("", response_model=toolingResponseSchema)
+def add(request: toolingSchema, db: Session = Depends(get_db)):
 
-    new_type = ToolingType(
-        desc=request.desc,
+    new_tooling = Tooling(
+        project=request.project,
+        client_supplier=request.client_supplier,
+        part_number=request.part_number,
+        price=request.price,
+        request_type=request.request_type,
+        product_type=request.product_type,
+        tooling_type=request.tooling_type,
+        requested_by=request.requested_by,
+        date_input=date.today(),
+        date_request=request.date_request,
+        date_sop=request.date_sop,
     )
-    db.add(new_type)
+    db.add(new_tooling)
     db.commit()
-    db.refresh(new_type)
-    return new_type
+    db.refresh(new_tooling)
+    return new_tooling
 
 
 @router.put("/{id}")
-def update(id: int, request: descSchema, db: Session = Depends(get_db)):
+def update(id: int, request: toolingSchema, db: Session = Depends(get_db)):
 
-    old_type = db.query(ToolingType).filter(ToolingType.id == id)
+    old_type = db.query(Tooling).filter(Tooling.id == id)
     if not old_type:
         pass
 
@@ -50,7 +62,7 @@ def update(id: int, request: descSchema, db: Session = Depends(get_db)):
 @router.delete("/{id}")
 def delete(id: int, db: Session = Depends(get_db)):
 
-    deleted_type = db.query(ToolingType).filter(ToolingType.id == id).first()
+    deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
     if deleted_type:
         db.delete(deleted_type)
         db.commit()
