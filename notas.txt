@@ -1,0 +1,37 @@
+
+
+IMagem  atestado
+infos atestado
+infos atestado
+infos atestado
+infos atestado
+Usuarios
+	quem manda
+	ADM
+
+------- MODELO inicial banco de dados-----------
+
+Users
+	id
+	nome
+	login
+	senha
+	EDV
+	ativo
+
+atestados
+	id
+	usuario
+	info atest1
+	info atest2
+	info atest3
+	info atest4
+	info atest5
+	status
+
+imagens atestados
+	id
+	id atestado
+	img
+
+------------------
