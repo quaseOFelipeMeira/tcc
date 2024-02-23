@@ -11,7 +11,8 @@ class Tooling(Base):
     # Project name
     project = Column(String, nullable=True)  # null if RPP
     # Client if is ICT / Supplier if is RPP
-    client_supplier = Column(String, nullable=True)
+    # client_supplier = Column(String, nullable=True)
+    client_supplier = Column(ForeignKey("client.id"), nullable=True)
     # part_number (opcional)
     part_number = Column(String, nullable=True)  # part number for the component
 
@@ -68,3 +69,10 @@ class ProductType(Base):
     id = Column(Integer, primary_key=True, index=True)
     desc = Column(String)
     cost_center = Column(String)
+
+
+# Client table to prevent same client with different spellings
+class Client(Base):
+    __tablename__ = "client"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True)
