@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.models import Tooling
-from core.schemas import toolingSchema, toolingResponseSchema
+from core.schemas import (
+    toolingSchema,
+    toolingResponseSchema,
+    partNumberSchema,
+    statusSchema,
+)
 
 from datetime import date
 
@@ -63,6 +68,33 @@ def update(id: int, request: toolingSchema, db: Session = Depends(get_db)):
     old_type.update(request.model_dump())
     db.commit()
     return request
+
+
+@router.patch("/{id}/part-number")
+def update_part_number(
+    id: int, request: partNumberSchema, db: Session = Depends(get_db)
+):
+    tooling = db.query(Tooling).filter(Tooling.id == id).first()
+    if not tooling:
+        pass
+
+    tooling.part_number = request.part_number
+    db.commit()
+    return request
+
+
+@router.patch("/{id}/status")
+def update_status(id: int, request: statusSchema, db: Session = Depends(get_db)):
+    tooling = db.query(Tooling).filter(Tooling.id == id).first()
+    if not tooling:
+        pass
+
+    tooling.was_approved = request.status
+    if request.status == False:
+        tooling.status_description = request.status_description
+    db.commit()
+    db.refresh(tooling)
+    return tooling
 
 
 @router.delete("/{id}")
