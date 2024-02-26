@@ -23,9 +23,16 @@ def get_all(db: Session = Depends(get_db)):
     return clients
 
 
-@router.get("/{id}", response_model=descSchema)
+# @router.get("/{id}", response_model=descSchema)
+@router.get("/{id}")
 def get_by_id(id: int, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.id == id).first()
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not Founded",
+        )
+
     return client
 
 
@@ -44,11 +51,17 @@ def add(request: descSchema, db: Session = Depends(get_db)):
 @router.put("/{id}")
 def update(id: int, request: descSchema, db: Session = Depends(get_db)):
 
-    old_type = db.query(Client).filter(Client.id == id)
-    if not old_type:
+    client = db.query(Client).filter(Client.id == id)
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not Founded",
+        )
+
+    if not client:
         pass
 
-    old_type.update(request.model_dump())
+    client.update(request.model_dump())
     db.commit()
     return request
 

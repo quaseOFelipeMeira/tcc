@@ -1,7 +1,7 @@
 """ File to define endpoints for request Type ( ICT / RRP / TLM / ...)
 """
 
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter, HTTPException, status, Response, Header
 from fastapi.params import Depends
 from typing import List
 from sqlalchemy.orm import Session
@@ -25,7 +25,8 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[toolingResponseSchema])
-def get_all(db: Session = Depends(get_db)):
+def get_all(user_agent: str | None = Header(default=None), db: Session = Depends(get_db)):
+    print(user_agent)
     types = db.query(Tooling).all()
     return types
 
