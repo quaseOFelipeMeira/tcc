@@ -34,15 +34,15 @@ class toolingSchema(BaseModel):
     project: str
     client_supplier: str
     part_number: str
+    RBSNO: str
 
     price: float
 
     request_type: int
     product_type: int
     tooling_type: int
-    requested_by: int
+    # requested_by: int
 
-    # date_input: date
     date_request: date
     date_sop: date
 
@@ -55,6 +55,7 @@ class toolingResponseSchema(toolingSchema):
 
 class partNumberSchema(BaseModel):
     part_number: str
+
 
 class statusSchema(BaseModel):
     status: bool

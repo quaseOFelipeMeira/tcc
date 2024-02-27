@@ -4,11 +4,6 @@ from core.models import Base
 
 from routers import v1
 
-# from routers import v1
-# from routers.v1.
-
-# from routers import user, login, product
-
 
 app = FastAPI(
     title="Tooling Management API",
@@ -26,9 +21,13 @@ app = FastAPI(
 )
 
 
-# app.include_router(product.router)
 app.include_router(v1.router)
 
 Base.metadata.create_all(engine)
 
 # uvicorn main:app --reload --port 8000
+
+if __name__ == '__main__':
+    import uvicorn
+    
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

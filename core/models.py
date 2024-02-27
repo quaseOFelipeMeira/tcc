@@ -47,6 +47,9 @@ class Tooling(Base):
 
     # ID from the user that requested the request
     requested_by = Column(String)
+    
+    # Robert Bosch Supplier Number O*
+    RBSNO = Column(String, nullable=True)
 
 
 # ICT / RRP / TLM / ...

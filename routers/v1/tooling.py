@@ -38,7 +38,10 @@ def get_by_id(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=toolingResponseSchema)
-def add(request: toolingSchema, db: Session = Depends(get_db)):
+@veri
+def add(request: toolingSchema, db: Session = Depends(get_db), user = None):
+
+    print(user)
 
     new_tooling = Tooling(
         project=request.project,
@@ -48,10 +51,11 @@ def add(request: toolingSchema, db: Session = Depends(get_db)):
         request_type=request.request_type,
         product_type=request.product_type,
         tooling_type=request.tooling_type,
-        requested_by=request.requested_by,
+        # requested_by=request.requested_by,
         date_input=date.today(),
         date_request=request.date_request,
         date_sop=request.date_sop,
+        RBSNO=request.RBSNO,
     )
     db.add(new_tooling)
     db.commit()
