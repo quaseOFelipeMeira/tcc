@@ -1,7 +1,7 @@
 """ File to define endpoints for request Type ( ICT / RRP / TLM / ...)
 """
 
-from fastapi import APIRouter, HTTPException, status, Response, Header
+from fastapi import APIRouter
 from fastapi.params import Depends
 from typing import List
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from core.schemas import (
 
 from datetime import date
 
+from configs.deps import get_current_user_azure
 
 router = APIRouter(
     tags=["Tooling"],
@@ -25,8 +26,8 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[toolingResponseSchema])
-def get_all(user_agent: str | None = Header(default=None), db: Session = Depends(get_db)):
-    print(user_agent)
+def get_all(user = Depends(get_current_user_azure), db: Session = Depends(get_db)):
+    print(user)
     types = db.query(Tooling).all()
     return types
 
@@ -38,7 +39,6 @@ def get_by_id(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=toolingResponseSchema)
-@veri
 def add(request: toolingSchema, db: Session = Depends(get_db), user = None):
 
     print(user)
