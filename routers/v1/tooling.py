@@ -6,6 +6,10 @@ from fastapi.params import Depends
 from typing import List
 from sqlalchemy.orm import Session
 
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import select
+
 from core.database import get_db
 from core.models import Tooling
 from core.schemas import (
@@ -25,11 +29,9 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[toolingResponseSchema])
-# def get_all(user = Depends(get_current_user_azure), db: Session = Depends(get_db)):
-def get_all(db: Session = Depends(get_db)):
-    types = db.query(Tooling).all()
-    return types
+@router.get("")
+async def get_all(db: Session = Depends(get_db)) -> Page[toolingSchema]:
+    return paginate(db, select(Tooling).order_by(Tooling.id))
 
 
 @router.get("/{id}", response_model=toolingResponseSchema)

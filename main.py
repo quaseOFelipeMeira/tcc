@@ -4,6 +4,8 @@ from core.models import Base
 
 from routers import v1
 
+from fastapi_pagination import add_pagination
+
 
 app = FastAPI(
     title="Tooling Management API",
@@ -22,6 +24,7 @@ app = FastAPI(
 
 
 app.include_router(v1.router)
+add_pagination(app)
 
 Base.metadata.create_all(engine)
 
