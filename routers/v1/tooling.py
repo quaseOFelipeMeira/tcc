@@ -26,8 +26,8 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[toolingResponseSchema])
-def get_all(user = Depends(get_current_user_azure), db: Session = Depends(get_db)):
-    print(user)
+# def get_all(user = Depends(get_current_user_azure), db: Session = Depends(get_db)):
+def get_all(db: Session = Depends(get_db)):
     types = db.query(Tooling).all()
     return types
 
