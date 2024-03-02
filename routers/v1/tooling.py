@@ -29,7 +29,26 @@ router = APIRouter(
 )
 
 
+def set_status_description(date_to_format: date):
+    # Method to return the date status description - BP00CF00
+    cf03 = date(date_to_format.year, 3, 1)
+    cf05 = date(date_to_format.year, 5, 1)
+    cf07 = date(date_to_format.year, 7, 1)
+
+    cf = ""
+    if date_to_format.month - cf07.month < 0:
+        cf = "07"
+    elif date_to_format.month - cf05.month < 0:
+        cf = "05"
+    elif date_to_format.month - cf03.month < 0:
+        cf = "03"
+    str_year = str(date_to_format.year)
+
+    return f"BP{str_year[-2]}{str_year[-1]}CF{cf}"
+
+
 @router.get("")
+# async def get_all(db: Session = Depends(get_db), token: str = Header(...), user = None) -> Page[toolingSchema]:
 async def get_all(db: Session = Depends(get_db)) -> Page[toolingSchema]:
     return paginate(db, select(Tooling).order_by(Tooling.id))
 
@@ -41,7 +60,7 @@ def get_by_id(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=toolingResponseSchema)
-def add(request: toolingSchema, db: Session = Depends(get_db), user = None):
+def add(request: toolingSchema, db: Session = Depends(get_db), user=None):
 
     print(user)
 
@@ -58,6 +77,7 @@ def add(request: toolingSchema, db: Session = Depends(get_db), user = None):
         date_request=request.date_request,
         date_sop=request.date_sop,
         RBSNO=request.RBSNO,
+        status_description=set_status_description(request.date_sop),
     )
     db.add(new_tooling)
     db.commit()
