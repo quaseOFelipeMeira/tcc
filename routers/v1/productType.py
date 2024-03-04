@@ -10,6 +10,7 @@ from core.database import get_db
 from core.models import ProductType
 from core.schemas import productTypeSchema, productTypeResponseSchema
 
+from configs.deps import get_current_user_azure
 
 router = APIRouter(
     tags=["Product Types"],
@@ -18,19 +19,19 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[productTypeResponseSchema])
-def get_all(db: Session = Depends(get_db)):
+def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     types = db.query(ProductType).all()
     return types
 
 
 @router.get("/{id}", response_model=productTypeResponseSchema)
-def get_by_id(id: int, db: Session = Depends(get_db)):
+def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     types = db.query(ProductType).filter(ProductType.id == id).first()
     return types
 
 
 @router.post("", response_model=productTypeSchema)
-def add(request: productTypeSchema, db: Session = Depends(get_db)):
+def add(request: productTypeSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     new_type = ProductType(
         desc=request.desc,
@@ -43,7 +44,7 @@ def add(request: productTypeSchema, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}")
-def update(id: int, request: productTypeSchema, db: Session = Depends(get_db)):
+def update(id: int, request: productTypeSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     old_type = db.query(ProductType).filter(ProductType.id == id)
     if not old_type:
@@ -55,7 +56,7 @@ def update(id: int, request: productTypeSchema, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db)):
+def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     deleted_type = db.query(ProductType).filter(ProductType.id == id).first()
     if deleted_type:

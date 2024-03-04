@@ -49,21 +49,18 @@ def set_status_description(date_to_format: date):
 
 @router.get("")
 # async def get_all(db: Session = Depends(get_db), token: str = Header(...), user = None) -> Page[toolingSchema]:
-async def get_all(db: Session = Depends(get_db)) -> Page[toolingSchema]:
+async def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)) -> Page[toolingSchema]:
     return paginate(db, select(Tooling).order_by(Tooling.id))
 
 
 @router.get("/{id}", response_model=toolingResponseSchema)
-def get_by_id(id: int, db: Session = Depends(get_db)):
+def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     types = db.query(Tooling).filter(Tooling.id == id).first()
     return types
 
 
 @router.post("", response_model=toolingResponseSchema)
-def add(request: toolingSchema, db: Session = Depends(get_db), user=None):
-
-    print(user)
-
+def add(request: toolingSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     new_tooling = Tooling(
         project=request.project,
         client_supplier=request.client_supplier,
@@ -86,8 +83,7 @@ def add(request: toolingSchema, db: Session = Depends(get_db), user=None):
 
 
 @router.put("/{id}")
-def update(id: int, request: toolingSchema, db: Session = Depends(get_db)):
-
+def update(id: int, request: toolingSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     old_type = db.query(Tooling).filter(Tooling.id == id)
     if not old_type:
         pass
@@ -98,8 +94,7 @@ def update(id: int, request: toolingSchema, db: Session = Depends(get_db)):
 
 
 @router.patch("/{id}/part-number")
-def update_part_number(
-    id: int, request: partNumberSchema, db: Session = Depends(get_db)
+def update_part_number(id: int, request: partNumberSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)
 ):
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
     if not tooling:
@@ -111,7 +106,7 @@ def update_part_number(
 
 
 @router.patch("/{id}/status")
-def update_status(id: int, request: statusSchema, db: Session = Depends(get_db)):
+def update_status(id: int, request: statusSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
     if not tooling:
         pass
@@ -125,7 +120,7 @@ def update_status(id: int, request: statusSchema, db: Session = Depends(get_db))
 
 
 @router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db)):
+def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
     if deleted_type:

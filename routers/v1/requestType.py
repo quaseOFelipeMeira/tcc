@@ -10,6 +10,7 @@ from core.database import get_db
 from core.models import RequestType
 from core.schemas import descSchema, descResponseSchema
 
+from configs.deps import get_current_user_azure
 
 router = APIRouter(
     tags=["Request Types"],
@@ -18,19 +19,19 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[descResponseSchema])
-def get_all(db: Session = Depends(get_db)):
+def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     types = db.query(RequestType).all()
     return types
 
 
 @router.get("/{id}", response_model=descResponseSchema)
-def get_by_id(id: int, db: Session = Depends(get_db)):
+def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     types = db.query(RequestType).filter(RequestType.id == id).first()
     return types
 
 
 @router.post("", response_model=descSchema)
-def add(request: descSchema, db: Session = Depends(get_db)):
+def add(request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     new_type = RequestType(
         desc=request.desc,
@@ -42,7 +43,7 @@ def add(request: descSchema, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}")
-def update(id: int, request: descResponseSchema, db: Session = Depends(get_db)):
+def update(id: int, request: descResponseSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     old_type = db.query(RequestType).filter(RequestType.id == id)
 
@@ -55,7 +56,7 @@ def update(id: int, request: descResponseSchema, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db)):
+def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     deleted_type = db.query(RequestType).filter(RequestType.id == id).first()
     if deleted_type:
