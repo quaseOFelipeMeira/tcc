@@ -1,7 +1,7 @@
 """ File to define endpoints for request Type ( ICT / RRP / TLM / ...)
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from fastapi.params import Depends
 from typing import List
 from sqlalchemy.orm import Session
@@ -47,7 +47,7 @@ def set_status_description(date_to_format: date):
     return f"BP{str_year[-2]}{str_year[-1]}CF{cf}"
 
 
-@router.get("")
+@router.get("", response_model=Page[toolingResponseSchema])
 async def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)) -> Page[toolingSchema]:
     request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
     
@@ -64,12 +64,20 @@ def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current
     if user.get("roles")[0] == "PPS":
         return db.query(Tooling).filter(Tooling.id == id).first()
 
-    types = db.query(Tooling).filter(Tooling.id == id).first()
-    return types
+    search_tooling = db.query(Tooling).filter(Tooling.id == id).first()
+    
+    if search_tooling.request_type == request_type.id:
+        return search_tooling
+    else:
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a ver essa informação"))
 
 
 @router.post("", response_model=toolingResponseSchema)
 def add(request: toolingSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+    
+    if user.get("roles")[0] == "PPS":
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
+    
     new_tooling = Tooling(
         project=request.project,
         client_supplier=request.client_supplier,
