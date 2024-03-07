@@ -10,6 +10,7 @@ from core.database import get_db
 from core.models import Client
 from core.schemas import descSchema, descResponseSchema
 
+from configs.deps import get_current_user_azure
 
 router = APIRouter(
     tags=["Client"],
@@ -18,14 +19,14 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[descResponseSchema])
-def get_all(db: Session = Depends(get_db)):
+def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     clients = db.query(Client).all()
     return clients
 
 
 # @router.get("/{id}", response_model=descSchema)
 @router.get("/{id}")
-def get_by_id(id: int, db: Session = Depends(get_db)):
+def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     client = db.query(Client).filter(Client.id == id).first()
     if not client:
         raise HTTPException(
@@ -37,7 +38,7 @@ def get_by_id(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=descSchema)
-def add(request: descSchema, db: Session = Depends(get_db)):
+def add(request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     client = Client(
         desc=request.desc,
@@ -49,7 +50,7 @@ def add(request: descSchema, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}")
-def update(id: int, request: descSchema, db: Session = Depends(get_db)):
+def update(id: int, request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     client = db.query(Client).filter(Client.id == id)
     if not client:
@@ -67,7 +68,7 @@ def update(id: int, request: descSchema, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db)):
+def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     deleted_type = db.query(Client).filter(Client.id == id).first()
     if deleted_type:
