@@ -51,6 +51,7 @@ class toolingResponseSchema(toolingSchema):
     was_approved: Optional[bool] = None
     status_description: Optional[str] = None
     date_input: date
+    date_request: date
 
 
 class partNumberSchema(BaseModel):

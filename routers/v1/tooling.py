@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session
 
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from core.database import get_db
-from core.models import Tooling
+from core.models import Tooling, RequestType
 from core.schemas import (
     toolingSchema,
     toolingResponseSchema,
@@ -48,13 +48,22 @@ def set_status_description(date_to_format: date):
 
 
 @router.get("")
-# async def get_all(db: Session = Depends(get_db), token: str = Header(...), user = None) -> Page[toolingSchema]:
 async def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)) -> Page[toolingSchema]:
-    return paginate(db, select(Tooling).order_by(Tooling.id))
+    request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
+    
+    if user.get("roles")[0] == "PPS":
+        return paginate(db, select(Tooling).order_by(Tooling.id))
+    
+    return paginate(db, select(Tooling).filter(Tooling.request_type == request_type.id).order_by(Tooling.id))
 
 
 @router.get("/{id}", response_model=toolingResponseSchema)
 def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+    request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
+    
+    if user.get("roles")[0] == "PPS":
+        return db.query(Tooling).filter(Tooling.id == id).first()
+
     types = db.query(Tooling).filter(Tooling.id == id).first()
     return types
 
