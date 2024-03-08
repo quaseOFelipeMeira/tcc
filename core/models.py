@@ -47,9 +47,27 @@ class Tooling(Base):
 
     # ID from the user that requested the request
     requested_by = Column(String)
-    
+
     # Robert Bosch Supplier Number
     RBSNO = Column(String, nullable=True)
+
+
+class ToolingUpdates(Base):
+    __tablename__ = "toolingUpdates"
+    id = Column(Integer, primary_key=True, index=True)
+    # column to identify the tooling:
+    tooling_fk = Column(ForeignKey("toolings.id"))
+    # info previously saved
+    project = Column(String, nullable=True)  # null if RPP
+    client_supplier = Column(ForeignKey("client.id"), nullable=True)
+    part_number = Column(String, nullable=True)  # part number for the component
+    price = Column(Double)
+    request_type = Column(ForeignKey("requestType.id"))
+    product_type = Column(ForeignKey("productType.id"))
+    tooling_type = Column(ForeignKey("toolingType.id"))
+    date_input = Column(Date)
+    date_request = Column(Date)
+    date_sop = Column(Date)
 
 
 # ICT / RRP / TLM / ...

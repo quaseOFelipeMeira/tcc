@@ -11,7 +11,7 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import select, and_
 
 from core.database import get_db
-from core.models import Tooling, RequestType
+from core.models import Tooling, RequestType, ToolingUpdates
 from core.schemas import (
     toolingSchema,
     toolingResponseSchema,
@@ -48,36 +48,63 @@ def set_status_description(date_to_format: date):
 
 
 @router.get("", response_model=Page[toolingResponseSchema])
-async def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)) -> Page[toolingSchema]:
-    request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
-    
+async def get_all(
+    db: Session = Depends(get_db), user=Depends(get_current_user_azure)
+) -> Page[toolingSchema]:
+    request_type = (
+        db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
+    )
+
     if user.get("roles")[0] == "PPS":
         return paginate(db, select(Tooling).order_by(Tooling.id))
-    
-    return paginate(db, select(Tooling).filter(Tooling.request_type == request_type.id).order_by(Tooling.id))
+
+    return paginate(
+        db,
+        select(Tooling)
+        .filter(Tooling.request_type == request_type.id)
+        .order_by(Tooling.id),
+    )
 
 
 @router.get("/{id}", response_model=toolingResponseSchema)
-def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
-    request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
-    
+def get_by_id(
+    id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
+):
+    request_type = (
+        db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
+    )
+
     if user.get("roles")[0] == "PPS":
         return db.query(Tooling).filter(Tooling.id == id).first()
 
     search_tooling = db.query(Tooling).filter(Tooling.id == id).first()
-    
+
     if search_tooling.request_type == request_type.id:
         return search_tooling
     else:
-        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a ver essa informação"))
+        raise (
+            HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Você não está autorizado a ver essa informação",
+            )
+        )
 
 
 @router.post("", response_model=toolingResponseSchema)
-def add(request: toolingSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
-    
-    if user.get("roles")[0] == "PPS":
-        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
-    
+def add(
+    request: toolingSchema,
+    db: Session = Depends(get_db),
+    # user=Depends(get_current_user_azure),
+):
+
+    # if user.get("roles")[0] == "PPS":
+    #     raise (
+    #         HTTPException(
+    #             status_code=status.HTTP_401_UNAUTHORIZED,
+    #             detail="Você não está autorizado a fazer essa requisição",
+    #         )
+    #     )
+
     new_tooling = Tooling(
         project=request.project,
         client_supplier=request.client_supplier,
@@ -100,18 +127,46 @@ def add(request: toolingSchema, db: Session = Depends(get_db), user = Depends(ge
 
 
 @router.put("/{id}")
-def update(id: int, request: toolingSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
-    old_type = db.query(Tooling).filter(Tooling.id == id)
-    if not old_type:
+def update(
+    id: int,
+    request: toolingSchema,
+    db: Session = Depends(get_db),
+    # user=Depends(get_current_user_azure),
+):
+    query = db.query(Tooling).filter(Tooling.id == id)
+    tooling = query.first()
+
+    if not tooling:
         pass
 
-    old_type.update(request.model_dump())
+    tooling_updated = ToolingUpdates(
+        tooling_fk=tooling.id,
+        project=tooling.project,
+        client_supplier=tooling.client_supplier,
+        part_number=tooling.part_number,
+        price=tooling.price,
+        request_type=tooling.request_type,
+        product_type=tooling.product_type,
+        tooling_type=tooling.tooling_type,
+        date_input=tooling.date_input,
+        date_request=tooling.date_request,
+        date_sop=tooling.date_sop,
+    )
+
+    db.add(tooling_updated)
+
+    tooling.date_input = date.today()
+    query.update(request.model_dump())
     db.commit()
     return request
 
 
 @router.patch("/{id}/part-number")
-def update_part_number(id: int, request: partNumberSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)
+def update_part_number(
+    id: int,
+    request: partNumberSchema,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
 ):
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
     if not tooling:
@@ -123,7 +178,12 @@ def update_part_number(id: int, request: partNumberSchema, db: Session = Depends
 
 
 @router.patch("/{id}/status")
-def update_status(id: int, request: statusSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def update_status(
+    id: int,
+    request: statusSchema,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
     if not tooling:
         pass
@@ -137,7 +197,9 @@ def update_status(id: int, request: statusSchema, db: Session = Depends(get_db),
 
 
 @router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def delete(
+    id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
+):
 
     deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
     if deleted_type:
