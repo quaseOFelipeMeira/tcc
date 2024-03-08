@@ -48,62 +48,36 @@ def set_status_description(date_to_format: date):
 
 
 @router.get("", response_model=Page[toolingResponseSchema])
-async def get_all(
-    db: Session = Depends(get_db), user=Depends(get_current_user_azure)
-) -> Page[toolingSchema]:
-    request_type = (
-        db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
-    )
-
+async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_azure)) -> Page[toolingSchema]:
     if user.get("roles")[0] == "PPS":
         return paginate(db, select(Tooling).order_by(Tooling.id))
-
-    return paginate(
-        db,
-        select(Tooling)
-        .filter(Tooling.request_type == request_type.id)
-        .order_by(Tooling.id),
-    )
+    
+    request_type = (db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first())
+    
+    return paginate(db, select(Tooling).filter(Tooling.request_type == request_type.id).order_by(Tooling.id))
 
 
 @router.get("/{id}", response_model=toolingResponseSchema)
-def get_by_id(
-    id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
-):
-    request_type = (
-        db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
-    )
-
+def get_by_id(id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     if user.get("roles")[0] == "PPS":
-        return db.query(Tooling).filter(Tooling.id == id).first()
-
+        tooling = db.query(Tooling).filter(Tooling.id == id).first()
+        toolings_historic = db.query(ToolingUpdates).filter(ToolingUpdates.tooling_fk == tooling.id).all()
+        return tooling
+    
+    request_type = (db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first())
     search_tooling = db.query(Tooling).filter(Tooling.id == id).first()
 
+    
     if search_tooling.request_type == request_type.id:
         return search_tooling
     else:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a ver essa informação",
-            )
-        )
+        raise (HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a ver essa informação"))
 
 
 @router.post("", response_model=toolingResponseSchema)
-def add(
-    request: toolingSchema,
-    db: Session = Depends(get_db),
-    # user=Depends(get_current_user_azure),
-):
-
-    # if user.get("roles")[0] == "PPS":
-    #     raise (
-    #         HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="Você não está autorizado a fazer essa requisição",
-    #         )
-    #     )
+def add(request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
+    if user.get("roles")[0] == "PPS":
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
 
     new_tooling = Tooling(
         project=request.project,
@@ -113,7 +87,7 @@ def add(
         request_type=request.request_type,
         product_type=request.product_type,
         tooling_type=request.tooling_type,
-        # requested_by=request.requested_by,
+        requested_by=user["oid"],
         date_input=date.today(),
         date_request=request.date_request,
         date_sop=request.date_sop,
@@ -127,17 +101,15 @@ def add(
 
 
 @router.put("/{id}")
-def update(
-    id: int,
-    request: toolingSchema,
-    db: Session = Depends(get_db),
-    # user=Depends(get_current_user_azure),
-):
+def update(id: int, request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     query = db.query(Tooling).filter(Tooling.id == id)
     tooling = query.first()
 
     if not tooling:
         pass
+    
+    if not tooling.requested_by == user['oid']:
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))
 
     tooling_updated = ToolingUpdates(
         tooling_fk=tooling.id,
@@ -162,13 +134,12 @@ def update(
 
 
 @router.patch("/{id}/part-number")
-def update_part_number(
-    id: int,
-    request: partNumberSchema,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user_azure),
-):
+def update_part_number(id: int, request: partNumberSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
+    if not user.get("roles")[0] == "SO":
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))
+    
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
+    
     if not tooling:
         pass
 
@@ -178,13 +149,12 @@ def update_part_number(
 
 
 @router.patch("/{id}/status")
-def update_status(
-    id: int,
-    request: statusSchema,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user_azure),
-):
+def update_status(id: int, request: statusSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
+    if not user.get("roles")[0] == "PPS":
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))
+    
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
+    
     if not tooling:
         pass
 
@@ -197,10 +167,7 @@ def update_status(
 
 
 @router.delete("/{id}")
-def delete(
-    id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
-):
-
+def delete(id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
     if deleted_type:
         db.delete(deleted_type)

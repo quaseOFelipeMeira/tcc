@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Double, ForeignKey, Date, Boolean
 from core.database import Base
-
+from sqlalchemy.orm import relationship
 
 class Tooling(Base):
     __tablename__ = "toolings"
@@ -50,7 +50,6 @@ class Tooling(Base):
 
     # Robert Bosch Supplier Number
     RBSNO = Column(String, nullable=True)
-
 
 class ToolingUpdates(Base):
     __tablename__ = "toolingUpdates"
