@@ -17,6 +17,7 @@ from core.schemas import (
     toolingResponseSchema,
     partNumberSchema,
     statusSchema,
+    toolingWithHistoric
 )
 
 from datetime import date
@@ -57,17 +58,14 @@ async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_a
     return paginate(db, select(Tooling).filter(Tooling.request_type == request_type.id).order_by(Tooling.id))
 
 
-@router.get("/{id}", response_model=toolingResponseSchema)
+@router.get("/{id}", response_model=toolingWithHistoric)
 def get_by_id(id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     if user.get("roles")[0] == "PPS":
         tooling = db.query(Tooling).filter(Tooling.id == id).first()
-        toolings_historic = db.query(ToolingUpdates).filter(ToolingUpdates.tooling_fk == tooling.id).all()
         return tooling
     
-    request_type = (db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first())
+    request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
     search_tooling = db.query(Tooling).filter(Tooling.id == id).first()
-
-    
     if search_tooling.request_type == request_type.id:
         return search_tooling
     else:
@@ -123,6 +121,7 @@ def update(id: int, request: toolingSchema, db: Session = Depends(get_db), user=
         date_input=tooling.date_input,
         date_request=tooling.date_request,
         date_sop=tooling.date_sop,
+        RBSNO=tooling.RBSNO
     )
 
     db.add(tooling_updated)

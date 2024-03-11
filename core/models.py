@@ -23,12 +23,15 @@ class Tooling(Base):
 
     # ICT / RRP / TLM / ...
     request_type = Column(ForeignKey("requestType.id"))
+    request = relationship("RequestType", back_populates="tooling")
 
     # drop box: Gallery injection, Product Area  Ignition, Product Area Fuel Supply Module, ...
     product_type = Column(ForeignKey("productType.id"))
+    product = relationship("ProductType", back_populates="tooling")
 
     # Ferramental de estampo, Molde de injeção plástica, Molde de injeção de alumínio,....
     tooling_type = Column(ForeignKey("toolingType.id"))
+    tooling_t = relationship("ToolingType", back_populates="tooling")
 
     # Current date for the request
     date_input = Column(Date)
@@ -50,6 +53,8 @@ class Tooling(Base):
 
     # Robert Bosch Supplier Number
     RBSNO = Column(String, nullable=True)
+    
+    history = relationship("ToolingUpdates", back_populates="tooling")
 
 class ToolingUpdates(Base):
     __tablename__ = "toolingUpdates"
@@ -61,12 +66,22 @@ class ToolingUpdates(Base):
     client_supplier = Column(ForeignKey("client.id"), nullable=True)
     part_number = Column(String, nullable=True)  # part number for the component
     price = Column(Double)
+    
     request_type = Column(ForeignKey("requestType.id"))
+    request = relationship("RequestType", back_populates="tooling_update")
+    
     product_type = Column(ForeignKey("productType.id"))
+    product = relationship("ProductType", back_populates="tooling_update")
+    
     tooling_type = Column(ForeignKey("toolingType.id"))
+    tooling_t = relationship("ToolingType", back_populates="tooling_update")
+    
     date_input = Column(Date)
     date_request = Column(Date)
     date_sop = Column(Date)
+    RBSNO = Column(String, nullable=True)
+    
+    tooling = relationship("Tooling", back_populates="history")
 
 
 # ICT / RRP / TLM / ...
@@ -75,6 +90,8 @@ class RequestType(Base):
     id = Column(Integer, primary_key=True, index=True)
     desc = Column(String)
 
+    tooling_update = relationship("ToolingUpdates", back_populates="request")
+    tooling = relationship("Tooling", back_populates="request")
 
 # Ferramental de estampo, Molde de injeção plástica, Molde de injeção de alumínio,....
 class ToolingType(Base):
@@ -82,6 +99,9 @@ class ToolingType(Base):
     id = Column(Integer, primary_key=True, index=True)
     desc = Column(String)
 
+    tooling_update = relationship("ToolingUpdates", back_populates="tooling_t")
+    tooling = relationship("Tooling", back_populates="tooling_t")
+    
 
 # drop box: Gallery injection, Product Area  Ignition, Product Area Fuel Supply Module, ...
 class ProductType(Base):
@@ -90,6 +110,9 @@ class ProductType(Base):
     desc = Column(String)
     cost_center = Column(String)
 
+    tooling_update = relationship("ToolingUpdates", back_populates="product")
+    tooling = relationship("Tooling", back_populates="product")
+    
 
 # Client table to prevent same client with different spellings
 class Client(Base):
