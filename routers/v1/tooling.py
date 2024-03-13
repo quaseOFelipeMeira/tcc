@@ -45,6 +45,8 @@ def set_status_description(request: toolingSchema, db: Session):
         return str(request.date_sop.year)[2:], cf05.id
     elif request.date_request < cf07.date_exp:
         return str(request.date_sop.year)[2:], cf07.id
+    else:
+        return str(request.date_sop.year+1)[2:], None
 
 @router.get("", response_model=Page[toolingResponseSchema])
 async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_azure)) -> Page[toolingSchema]:
@@ -52,7 +54,6 @@ async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_a
         return paginate(db, select(Tooling).order_by(Tooling.id))
     
     request_type = (db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first())
-    
     return paginate(db, select(Tooling).filter(Tooling.request_type == request_type.id).order_by(Tooling.id))
 
 
@@ -72,8 +73,8 @@ def get_by_id(id: int, db: Session = Depends(get_db), user=Depends(get_current_u
 
 @router.post("", response_model=toolingResponseSchema)
 def add(request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
-    # if user.get("roles")[0] == "PPS":
-        # raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
+    if user.get("roles")[0] == "PPS":
+        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
     
     tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
     product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()

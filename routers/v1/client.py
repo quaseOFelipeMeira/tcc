@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.models import Client
-from core.schemas import descSchema, descResponseSchema
+from core.schemas import descSchema, descResponseSchema, clientSchema
 
 from configs.deps import get_current_user_azure
 
@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[descResponseSchema])
+@router.get("", response_model=List[clientSchema])
 def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     clients = db.query(Client).all()
     return clients
@@ -37,11 +37,11 @@ def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current
     return client
 
 
-@router.post("", response_model=descSchema)
-def add(request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+@router.post("", response_model=clientSchema)
+def add(request: clientSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     client = Client(
-        desc=request.desc,
+        name=request.name,
     )
     db.add(client)
     db.commit()
@@ -50,7 +50,7 @@ def add(request: descSchema, db: Session = Depends(get_db), user = Depends(get_c
 
 
 @router.put("/{id}")
-def update(id: int, request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def update(id: int, request: clientSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
     client = db.query(Client).filter(Client.id == id)
     if not client:

@@ -5,7 +5,7 @@ from core.models import Base
 from routers import v1
 
 from fastapi_pagination import add_pagination
-
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Tooling Management API",
@@ -29,6 +29,15 @@ add_pagination(app)
 Base.metadata.create_all(engine)
 
 # uvicorn main:app --reload --port 8000
+
+# Allow requests from all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
 
 if __name__ == '__main__':
     import uvicorn

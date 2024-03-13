@@ -16,6 +16,10 @@ class LoginSchema(BaseModel):
 class descSchema(BaseModel):
     desc: str
 
+class clientSchema(BaseModel):
+    id: int
+    name: str
+
 
 class descResponseSchema(descSchema):
     id: int
@@ -40,14 +44,14 @@ class ProductType(BaseModel):
 class ToolingType(BaseModel):
     desc:str
     
-class DateCF(BaseModel):
+class DateCFResponse(BaseModel):
     desc:str
 
 class toolingSchema(BaseModel):
     project: str
     client_supplier: int
     part_number: str
-    RBSNO: str
+    RBSNO: Optional[str] = None
     price: float
     product: ProductType
     tooling_t: ToolingType
@@ -65,7 +69,7 @@ class toolingResponseSchema(toolingSchema):
     was_approved: Optional[bool] = None
     request: RequestType
     bp: int
-    cf: Optional[dateCF] = None
+    cf: Optional[DateCFResponse] = None
     date_input: date
     date_request: date
 
