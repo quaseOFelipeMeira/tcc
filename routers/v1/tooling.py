@@ -11,7 +11,7 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import select, and_
 
 from core.database import get_db
-from core.models import Tooling, RequestType, ToolingUpdates
+from core.models import Tooling, RequestType, ToolingUpdates, DateCF, ToolingType, ProductType
 from core.schemas import (
     toolingSchema,
     toolingResponseSchema,
@@ -30,23 +30,21 @@ router = APIRouter(
 )
 
 
-def set_status_description(date_to_format: date):
+def set_status_description(request: toolingSchema, db: Session):
     # Method to return the date status description - BP00CF00
-    cf03 = date(date_to_format.year, 3, 1)
-    cf05 = date(date_to_format.year, 5, 1)
-    cf07 = date(date_to_format.year, 7, 1)
+    cf03 = db.query(DateCF).filter(DateCF.desc == "03").first()
+    cf05 = db.query(DateCF).filter(DateCF.desc == "05").first()
+    cf07 = db.query(DateCF).filter(DateCF.desc == "07").first()
+        
+    if request.date_sop.year > date.today().year:
+        return str(request.date_sop.year)[2:], None
 
-    cf = ""
-    if date_to_format.month - cf07.month < 0:
-        cf = "07"
-    elif date_to_format.month - cf05.month < 0:
-        cf = "05"
-    elif date_to_format.month - cf03.month < 0:
-        cf = "03"
-    str_year = str(date_to_format.year)
-
-    return f"BP{str_year[-2]}{str_year[-1]}CF{cf}"
-
+    if request.date_request < cf03.date_exp:
+        return str(request.date_sop.year)[2:], cf03.id
+    elif request.date_request < cf05.date_exp:
+        return str(request.date_sop.year)[2:], cf05.id
+    elif request.date_request < cf07.date_exp:
+        return str(request.date_sop.year)[2:], cf07.id
 
 @router.get("", response_model=Page[toolingResponseSchema])
 async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_azure)) -> Page[toolingSchema]:
@@ -74,27 +72,36 @@ def get_by_id(id: int, db: Session = Depends(get_db), user=Depends(get_current_u
 
 @router.post("", response_model=toolingResponseSchema)
 def add(request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
-    if user.get("roles")[0] == "PPS":
-        raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
+    # if user.get("roles")[0] == "PPS":
+        # raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
+    
+    tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
+    product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
+    request_type = db.query(RequestType).filter_by(desc=user.get("roles")[0]).first()
 
+    bp, cf = set_status_description(request, db)
+    
     new_tooling = Tooling(
         project=request.project,
         client_supplier=request.client_supplier,
         part_number=request.part_number,
         price=request.price,
-        request_type=request.request_type,
-        product_type=request.product_type,
-        tooling_type=request.tooling_type,
+        request_type=request_type.id,
+        product_type=product_type.id,
+        tooling_type=tooling_type.id,
         requested_by=user["oid"],
         date_input=date.today(),
         date_request=request.date_request,
         date_sop=request.date_sop,
         RBSNO=request.RBSNO,
-        status_description=set_status_description(request.date_sop),
+        bp=bp,
+        cf_id=cf
     )
+    
     db.add(new_tooling)
     db.commit()
     db.refresh(new_tooling)
+    
     return new_tooling
 
 
