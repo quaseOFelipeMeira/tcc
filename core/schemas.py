@@ -39,33 +39,46 @@ class ProductType(BaseModel):
     
 class ToolingType(BaseModel):
     desc:str
+    
+class DateCF(BaseModel):
+    desc:str
 
 class toolingSchema(BaseModel):
     project: str
     client_supplier: int
     part_number: str
     RBSNO: str
-
     price: float
-
-    request: RequestType
     product: ProductType
     tooling_t: ToolingType
-
     date_request: date
     date_sop: date
+
+
+class dateCF(BaseModel):
+    desc: str
+    date_exp: date
 
 
 class toolingResponseSchema(toolingSchema):
     id: int
     was_approved: Optional[bool] = None
-    status_description: Optional[str] = None
+    request: RequestType
+    bp: int
+    cf: Optional[dateCF] = None
     date_input: date
     date_request: date
 
 
+class toolingResponseUpdateSchema(toolingSchema):
+    id: int
+    was_approved: Optional[bool] = None
+    request: RequestType
+    date_input: date
+    date_request: date
+
 class toolingWithHistoric(toolingResponseSchema):
-    history: Optional[List[toolingResponseSchema]]
+    history: Optional[List[toolingResponseUpdateSchema]]
 
 
 class partNumberSchema(BaseModel):

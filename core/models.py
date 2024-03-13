@@ -23,15 +23,12 @@ class Tooling(Base):
 
     # ICT / RRP / TLM / ...
     request_type = Column(ForeignKey("requestType.id"))
-    request = relationship("RequestType", back_populates="tooling")
 
     # drop box: Gallery injection, Product Area  Ignition, Product Area Fuel Supply Module, ...
     product_type = Column(ForeignKey("productType.id"))
-    product = relationship("ProductType", back_populates="tooling")
 
     # Ferramental de estampo, Molde de injeção plástica, Molde de injeção de alumínio,....
     tooling_type = Column(ForeignKey("toolingType.id"))
-    tooling_t = relationship("ToolingType", back_populates="tooling")
 
     # Current date for the request
     date_input = Column(Date)
@@ -45,15 +42,22 @@ class Tooling(Base):
     # Status if the request was approved: Yes - true / null - not yet / No - refused
     was_approved = Column(Boolean, nullable=True)
 
-    # Period of the approval - "BP24" / "BP24CF02" or "CF02"
-    status_description = Column(String, nullable=True)
-
+    # Period of the approval relation about BP - "24" / "25"
+    bp = Column(Integer)
+    
+    # Period of the approval relation about CF - "CF03" / "CF05"
+    cf_id = Column(ForeignKey("dateCF.id"), nullable=True)
+    
     # ID from the user that requested the request
     requested_by = Column(String)
 
     # Robert Bosch Supplier Number
     RBSNO = Column(String, nullable=True)
     
+    cf = relationship("DateCF", back_populates="tooling")
+    request = relationship("RequestType", back_populates="tooling")
+    product = relationship("ProductType", back_populates="tooling")
+    tooling_t = relationship("ToolingType", back_populates="tooling")
     history = relationship("ToolingUpdates", back_populates="tooling")
 
 class ToolingUpdates(Base):
@@ -66,21 +70,17 @@ class ToolingUpdates(Base):
     client_supplier = Column(ForeignKey("client.id"), nullable=True)
     part_number = Column(String, nullable=True)  # part number for the component
     price = Column(Double)
-    
     request_type = Column(ForeignKey("requestType.id"))
-    request = relationship("RequestType", back_populates="tooling_update")
-    
     product_type = Column(ForeignKey("productType.id"))
-    product = relationship("ProductType", back_populates="tooling_update")
-    
     tooling_type = Column(ForeignKey("toolingType.id"))
-    tooling_t = relationship("ToolingType", back_populates="tooling_update")
-    
     date_input = Column(Date)
     date_request = Column(Date)
     date_sop = Column(Date)
     RBSNO = Column(String, nullable=True)
     
+    request = relationship("RequestType", back_populates="tooling_update")
+    product = relationship("ProductType", back_populates="tooling_update")
+    tooling_t = relationship("ToolingType", back_populates="tooling_update")
     tooling = relationship("Tooling", back_populates="history")
 
 
@@ -119,3 +119,12 @@ class Client(Base):
     __tablename__ = "client"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
+
+
+class DateCF(Base):
+    __tablename__ = "dateCF"
+    id = Column(Integer, primary_key=True, index=True)
+    desc = Column(String)
+    date_exp = Column(Date)
+    
+    tooling = relationship("Tooling", back_populates="cf")
