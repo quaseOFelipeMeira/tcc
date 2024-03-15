@@ -55,6 +55,7 @@ class Tooling(Base):
     RBSNO = Column(String, nullable=True)
     
     cf = relationship("DateCF", back_populates="tooling")
+    client = relationship("Client", back_populates="tooling")
     request = relationship("RequestType", back_populates="tooling")
     product = relationship("ProductType", back_populates="tooling")
     tooling_t = relationship("ToolingType", back_populates="tooling")
@@ -79,6 +80,7 @@ class ToolingUpdates(Base):
     RBSNO = Column(String, nullable=True)
     
     request = relationship("RequestType", back_populates="tooling_update")
+    client = relationship("Client", back_populates="tooling_update")
     product = relationship("ProductType", back_populates="tooling_update")
     tooling_t = relationship("ToolingType", back_populates="tooling_update")
     tooling = relationship("Tooling", back_populates="history")
@@ -120,7 +122,9 @@ class Client(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
 
-
+    tooling_update = relationship("ToolingUpdates", back_populates="client")
+    tooling = relationship("Tooling", back_populates="client")
+    
 class DateCF(Base):
     __tablename__ = "dateCF"
     id = Column(Integer, primary_key=True, index=True)

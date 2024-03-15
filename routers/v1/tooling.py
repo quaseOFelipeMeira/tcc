@@ -11,7 +11,16 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import select, and_
 
 from core.database import get_db
-from core.models import Tooling, RequestType, ToolingUpdates, DateCF, ToolingType, ProductType
+from core.models import (
+    Tooling, 
+    RequestType, 
+    ToolingUpdates, 
+    DateCF, 
+    ToolingType, 
+    ProductType,
+    Client
+)
+
 from core.schemas import (
     toolingSchema,
     toolingResponseSchema,
@@ -47,14 +56,28 @@ def set_status_description(request: toolingSchema, db: Session):
         return str(request.date_sop.year)[2:], cf07.id
     else:
         return str(request.date_sop.year+1)[2:], None
+    
+def set_client_description(request: toolingSchema, db: Session):
+    client = db.query(Client).filter_by(name=request.client.name).first()
+
+    if not client:
+        client = Client(
+            name=request.client.name,
+        )
+        db.add(client)
+        db.commit()
+        db.refresh(client)
+    
+    return client
+        
 
 @router.get("", response_model=Page[toolingResponseSchema])
-async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_azure)) -> Page[toolingSchema]:
+async def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_azure)) -> Page[toolingResponseSchema]:
     if user.get("roles")[0] == "PPS":
         return paginate(db, select(Tooling).order_by(Tooling.id))
     
     request_type = (db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first())
-    return paginate(db, select(Tooling).filter(Tooling.request_type == request_type.id).order_by(Tooling.id))
+    return paginate(db, select(Tooling).filter(and_(Tooling.request_type == request_type.id, Tooling.requested_by == user["oid"])).order_by(Tooling.id))
 
 
 @router.get("/{id}", response_model=toolingWithHistoric)
@@ -65,7 +88,11 @@ def get_by_id(id: int, db: Session = Depends(get_db), user=Depends(get_current_u
     
     request_type = db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
     search_tooling = db.query(Tooling).filter(Tooling.id == id).first()
-    if search_tooling.request_type == request_type.id:
+    
+    if not search_tooling:
+        raise (HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tooling não encontrado"))
+    
+    if search_tooling.request_type == request_type.id and search_tooling.requested_by ==  user["oid"]:
         return search_tooling
     else:
         raise (HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a ver essa informação"))
@@ -75,16 +102,17 @@ def get_by_id(id: int, db: Session = Depends(get_db), user=Depends(get_current_u
 def add(request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     if user.get("roles")[0] == "PPS":
         raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))        
-    
+
     tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
     product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
     request_type = db.query(RequestType).filter_by(desc=user.get("roles")[0]).first()
-
+    
     bp, cf = set_status_description(request, db)
+    client = set_client_description(request, db)
     
     new_tooling = Tooling(
         project=request.project,
-        client_supplier=request.client_supplier,
+        client_supplier=client.id,
         part_number=request.part_number,
         price=request.price,
         request_type=request_type.id,
@@ -109,35 +137,52 @@ def add(request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_
 @router.put("/{id}")
 def update(id: int, request: toolingSchema, db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     query = db.query(Tooling).filter(Tooling.id == id)
-    tooling = query.first()
-
+    tooling: Tooling = query.first()
+    
     if not tooling:
-        pass
+        raise(HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tooling não encontrado"))
     
     if not tooling.requested_by == user['oid']:
         raise(HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Você não está autorizado a fazer essa requisição"))
 
+    tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
+    product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
+    request_type = db.query(RequestType).filter_by(desc=user.get("roles")[0]).first()
+
+    bp, cf = set_status_description(request, db)
+    client = set_client_description(request, db)
+    
     tooling_updated = ToolingUpdates(
         tooling_fk=tooling.id,
         project=tooling.project,
-        client_supplier=tooling.client_supplier,
+        client_supplier=client.id,
         part_number=tooling.part_number,
         price=tooling.price,
-        request_type=tooling.request_type,
-        product_type=tooling.product_type,
-        tooling_type=tooling.tooling_type,
+        request_type=request_type.id,
+        product_type=product_type.id,
+        tooling_type=tooling_type.id,
         date_input=tooling.date_input,
         date_request=tooling.date_request,
         date_sop=tooling.date_sop,
         RBSNO=tooling.RBSNO
     )
-
+    
     db.add(tooling_updated)
-
-    tooling.date_input = date.today()
-    query.update(request.model_dump())
+    
+    dicionario = request.model_dump()
+    dicionario.pop("client")
+    dicionario.pop("product")
+    dicionario.pop("tooling_t")
+    dicionario["client_supplier"] = client.id
+    dicionario["request_type"] = request_type.id
+    dicionario["product_type"] = product_type.id
+    dicionario["tooling_type"] = tooling_type.id
+    dicionario["cf_id"] = cf
+    dicionario["bp"] = bp
+    query.update(dicionario)
     db.commit()
-    return request
+    return dicionario
+
 
 
 @router.patch("/{id}/part-number")
@@ -149,7 +194,7 @@ def update_part_number(id: int, request: partNumberSchema, db: Session = Depends
     
     if not tooling:
         pass
-
+    
     tooling.part_number = request.part_number
     db.commit()
     return request

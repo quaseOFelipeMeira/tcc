@@ -16,8 +16,8 @@ class LoginSchema(BaseModel):
 class descSchema(BaseModel):
     desc: str
 
+
 class clientSchema(BaseModel):
-    id: int
     name: str
 
 
@@ -49,7 +49,7 @@ class DateCFResponse(BaseModel):
 
 class toolingSchema(BaseModel):
     project: str
-    client_supplier: int
+    client: clientSchema
     part_number: str
     RBSNO: Optional[str] = None
     price: float
