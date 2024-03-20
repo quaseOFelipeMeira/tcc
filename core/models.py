@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Double, ForeignKey, Date, Boolea
 from core.database import Base
 from sqlalchemy.orm import relationship
 
+
 class Tooling(Base):
     __tablename__ = "toolings"
     id = Column(Integer, primary_key=True, index=True)
@@ -9,12 +10,12 @@ class Tooling(Base):
     # ==== description of the tooling ==================
 
     # Project name
-    project = Column(String, nullable=True)  # null if RPP
+    project = Column(String(255), nullable=True)  # null if RPP
     # Client if is ICT / Supplier if is RPP
     # client_supplier = Column(String, nullable=True)
     client_supplier = Column(ForeignKey("client.id"), nullable=True)
     # part_number (opcional)
-    part_number = Column(String, nullable=True)  # part number for the component
+    part_number = Column(String(255), nullable=True)  # part number for the component
 
     # ==================================================
 
@@ -40,20 +41,23 @@ class Tooling(Base):
     date_sop = Column(Date)
 
     # Status if the request was approved: Yes - true / null - not yet / No - refused
-    was_approved = Column(Boolean, nullable=True)
+    was_approved = Column(Boolean, nullable=True, default=True)
 
     # Period of the approval relation about BP - "24" / "25"
     bp = Column(Integer)
-    
+
     # Period of the approval relation about CF - "CF03" / "CF05"
     cf_id = Column(ForeignKey("dateCF.id"), nullable=True)
-    
+
     # ID from the user that requested the request
-    requested_by = Column(String)
+    requested_by = Column(String(255))
 
     # Robert Bosch Supplier Number
-    RBSNO = Column(String, nullable=True)
-    
+    RBSNO = Column(String(255), nullable=True)
+
+    # # Number of purchase request, inserted only by SO
+    # so_number = Column(String, nullable=True)
+
     cf = relationship("DateCF", back_populates="tooling")
     client = relationship("Client", back_populates="tooling")
     request = relationship("RequestType", back_populates="tooling")
@@ -61,15 +65,16 @@ class Tooling(Base):
     tooling_t = relationship("ToolingType", back_populates="tooling")
     history = relationship("ToolingUpdates", back_populates="tooling")
 
+
 class ToolingUpdates(Base):
     __tablename__ = "toolingUpdates"
     id = Column(Integer, primary_key=True, index=True)
     # column to identify the tooling:
     tooling_fk = Column(ForeignKey("toolings.id"))
     # info previously saved
-    project = Column(String, nullable=True)  # null if RPP
+    project = Column(String(255), nullable=True)  # null if RPP
     client_supplier = Column(ForeignKey("client.id"), nullable=True)
-    part_number = Column(String, nullable=True)  # part number for the component
+    part_number = Column(String(255), nullable=True)  # part number for the component
     price = Column(Double)
     request_type = Column(ForeignKey("requestType.id"))
     product_type = Column(ForeignKey("productType.id"))
@@ -77,8 +82,8 @@ class ToolingUpdates(Base):
     date_input = Column(Date)
     date_request = Column(Date)
     date_sop = Column(Date)
-    RBSNO = Column(String, nullable=True)
-    
+    RBSNO = Column(String(255), nullable=True)
+
     request = relationship("RequestType", back_populates="tooling_update")
     client = relationship("Client", back_populates="tooling_update")
     product = relationship("ProductType", back_populates="tooling_update")
@@ -90,45 +95,47 @@ class ToolingUpdates(Base):
 class RequestType(Base):
     __tablename__ = "requestType"
     id = Column(Integer, primary_key=True, index=True)
-    desc = Column(String)
+    desc = Column(String(3))
 
     tooling_update = relationship("ToolingUpdates", back_populates="request")
     tooling = relationship("Tooling", back_populates="request")
+
 
 # Ferramental de estampo, Molde de injeção plástica, Molde de injeção de alumínio,....
 class ToolingType(Base):
     __tablename__ = "toolingType"
     id = Column(Integer, primary_key=True, index=True)
-    desc = Column(String)
+    desc = Column(String(255))
 
     tooling_update = relationship("ToolingUpdates", back_populates="tooling_t")
     tooling = relationship("Tooling", back_populates="tooling_t")
-    
+
 
 # drop box: Gallery injection, Product Area  Ignition, Product Area Fuel Supply Module, ...
 class ProductType(Base):
     __tablename__ = "productType"
     id = Column(Integer, primary_key=True, index=True)
-    desc = Column(String)
-    cost_center = Column(String)
+    desc = Column(String(255))
+    cost_center = Column(String(255))
 
     tooling_update = relationship("ToolingUpdates", back_populates="product")
     tooling = relationship("Tooling", back_populates="product")
-    
+
 
 # Client table to prevent same client with different spellings
 class Client(Base):
     __tablename__ = "client"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
+    name = Column(String(255), unique=True)
 
     tooling_update = relationship("ToolingUpdates", back_populates="client")
     tooling = relationship("Tooling", back_populates="client")
-    
+
+
 class DateCF(Base):
     __tablename__ = "dateCF"
     id = Column(Integer, primary_key=True, index=True)
-    desc = Column(String)
+    desc = Column(String(255))
     date_exp = Column(Date)
-    
+
     tooling = relationship("Tooling", back_populates="cf")
