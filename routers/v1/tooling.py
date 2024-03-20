@@ -149,6 +149,8 @@ def add(
 
     bp, cf = set_status_description(request, db)
     client = set_client_description(request, db)
+    
+    print(user)
 
     new_tooling = Tooling(
         project=request.project,
@@ -158,7 +160,7 @@ def add(
         request_type=request_type.id,
         product_type=product_type.id,
         tooling_type=tooling_type.id,
-        requested_by=user["oid"],
+        requested_by=user["preferred_username"],
         date_input=date.today(),
         date_request=request.date_request,
         date_sop=request.date_sop,
