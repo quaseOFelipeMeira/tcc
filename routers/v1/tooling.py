@@ -88,7 +88,7 @@ async def get_all(
         .filter(
             and_(
                 Tooling.request_type == request_type.id,
-                Tooling.requested_by == user["oid"],
+                Tooling.requested_by == user["preferred_username"],
             )
         )
         .order_by(Tooling.id),
@@ -117,7 +117,7 @@ def get_by_id(
 
     if (
         search_tooling.request_type == request_type.id
-        and search_tooling.requested_by == user["oid"]
+        and search_tooling.requested_by == user["preferred_username"]
     ):
         return search_tooling
     else:
@@ -149,8 +149,6 @@ def add(
 
     bp, cf = set_status_description(request, db)
     client = set_client_description(request, db)
-    
-    print(user)
 
     new_tooling = Tooling(
         project=request.project,
@@ -181,7 +179,7 @@ def update(
     id: int,
     request: toolingSchema,
     db: Session = Depends(get_db),
-    # user=Depends(get_current_user_azure),
+    user=Depends(get_current_user_azure),
 ):
     query = db.query(Tooling).filter(Tooling.id == id)
     tooling: Tooling = query.first()
@@ -193,59 +191,67 @@ def update(
             )
         )
 
-    # if not tooling.requested_by == user["oid"]:
-    #     raise (
-    #         HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="Você não está autorizado a fazer essa requisição",
-    #         )
-    #     )
+    if not tooling.requested_by == user["preferred_username"]:
+        raise (
+            HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você não está autorizado a fazer essa requisição",
+            )
+        )
 
+
+    # Verifying if the tooling is able to be modified
     if tooling.was_approved == True:
-        print("tooling.cf")
-        print(int(tooling.cf))
-        # if tooling.cf:
-        #     print(tooling)
-        # if tooling.cf < date.today().month:
-        #     print(tooling)
+        today = date.today()
+        
+        if (str(tooling.bp) == str(today.year)[2:4]): 
 
-    # tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
-    # product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
-    # request_type = db.query(RequestType).filter_by(desc=user.get("roles")[0]).first()
+            cf_date = db.query(DateCF).filter_by(id= tooling.cf_id).first()
 
-    # bp, cf = set_status_description(request, db)
-    # client = set_client_description(request, db)
+            if (tooling.cf_id and cf_date.date_exp < today):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Não é possível alterar esse tooling",
+                )
+            
 
-    # tooling_updated = ToolingUpdates(
-    #     tooling_fk=tooling.id,
-    #     project=tooling.project,
-    #     client_supplier=client.id,
-    #     part_number=tooling.part_number,
-    #     price=tooling.price,
-    #     request_type=request_type.id,
-    #     product_type=product_type.id,
-    #     tooling_type=tooling_type.id,
-    #     date_input=tooling.date_input,
-    #     date_request=tooling.date_request,
-    #     date_sop=tooling.date_sop,
-    #     RBSNO=tooling.RBSNO,
-    # )
+    tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
+    product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
+    request_type = db.query(RequestType).filter_by(desc=user.get("roles")[0]).first()
 
-    # db.add(tooling_updated)
+    bp, cf = set_status_description(request, db)
+    client = set_client_description(request, db)
 
-    # dicionario = request.model_dump()
-    # dicionario.pop("client")
-    # dicionario.pop("product")
-    # dicionario.pop("tooling_t")
-    # dicionario["client_supplier"] = client.id
-    # dicionario["request_type"] = request_type.id
-    # dicionario["product_type"] = product_type.id
-    # dicionario["tooling_type"] = tooling_type.id
-    # dicionario["cf_id"] = cf
-    # dicionario["bp"] = bp
-    # query.update(dicionario)
-    # db.commit()
-    # return dicionario
+    tooling_updated = ToolingUpdates(
+        tooling_fk=tooling.id,
+        project=tooling.project,
+        client_supplier=client.id,
+        part_number=tooling.part_number,
+        price=tooling.price,
+        request_type=request_type.id,
+        product_type=product_type.id,
+        tooling_type=tooling_type.id,
+        date_input=tooling.date_input,
+        date_request=tooling.date_request,
+        date_sop=tooling.date_sop,
+        RBSNO=tooling.RBSNO,
+    )
+
+    db.add(tooling_updated)
+
+    dicionario = request.model_dump()
+    dicionario.pop("client")
+    dicionario.pop("product")
+    dicionario.pop("tooling_t")
+    dicionario["client_supplier"] = client.id
+    dicionario["request_type"] = request_type.id
+    dicionario["product_type"] = product_type.id
+    dicionario["tooling_type"] = tooling_type.id
+    dicionario["cf_id"] = cf
+    dicionario["bp"] = bp
+    query.update(dicionario)
+    db.commit()
+    return dicionario
 
 
 @router.post("/{id}/part-number")
