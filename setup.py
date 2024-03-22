@@ -15,7 +15,7 @@ toolingTypes = [
 
 requestTypes = [
     {"desc": "ICT"},
-    {"desc": "RRP"},
+    {"desc": "RPP"},
     {"desc": "TLM"},
 ]
 
