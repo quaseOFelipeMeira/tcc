@@ -44,7 +44,7 @@ class Tooling(Base):
     was_approved = Column(Boolean, nullable=True, default=True)
 
     # Period of the approval relation about BP - "24" / "25"
-    bp = Column(Integer)
+    bp_id = Column(ForeignKey("dateBP.id"))
 
     # Period of the approval relation about CF - "CF03" / "CF05"
     cf_id = Column(ForeignKey("dateCF.id"), nullable=True)
@@ -59,6 +59,7 @@ class Tooling(Base):
     # so_number = Column(String, nullable=True)
 
     cf = relationship("DateCF", back_populates="tooling")
+    bp = relationship("DateBP", back_populates="tooling")
     client = relationship("Client", back_populates="tooling")
     request = relationship("RequestType", back_populates="tooling")
     product = relationship("ProductType", back_populates="tooling")
@@ -137,5 +138,17 @@ class DateCF(Base):
     id = Column(Integer, primary_key=True, index=True)
     desc = Column(String(255))
     date_exp = Column(Date)
+    bp = Column(ForeignKey("dateBP.id"))
 
     tooling = relationship("Tooling", back_populates="cf")
+    bp_cf = relationship("DateBP", back_populates="cf_bp")
+
+
+class DateBP(Base):
+    __tablename__ = "dateBP"
+    id = Column(Integer, primary_key=True, index=True)
+    desc = Column(String(255))
+    date_exp = Column(Date)
+
+    tooling = relationship("Tooling", back_populates="bp")
+    cf_bp = relationship("DateCF", back_populates="bp_cf")

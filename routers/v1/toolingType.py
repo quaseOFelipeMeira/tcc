@@ -18,19 +18,25 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[descResponseSchema])
-def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def get_all(db: Session = Depends(get_db), user=Depends(get_current_user_azure)):
     types = db.query(ToolingType).all()
     return types
 
 
 @router.get("/{id}", response_model=descSchema)
-def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def get_by_id(
+    id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
+):
     types = db.query(ToolingType).filter(ToolingType.id == id).first()
     return types
 
 
 @router.post("", response_model=descSchema)
-def add(request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def add(
+    request: descSchema,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
 
     new_type = ToolingType(
         desc=request.desc,
@@ -42,7 +48,12 @@ def add(request: descSchema, db: Session = Depends(get_db), user = Depends(get_c
 
 
 @router.put("/{id}")
-def update(id: int, request: descSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def update(
+    id: int,
+    request: descSchema,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
 
     old_type = db.query(ToolingType).filter(ToolingType.id == id)
     if not old_type:
@@ -53,12 +64,12 @@ def update(id: int, request: descSchema, db: Session = Depends(get_db), user = D
     return request
 
 
-@router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+# @router.delete("/{id}")
+# def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
-    deleted_type = db.query(ToolingType).filter(ToolingType.id == id).first()
-    if deleted_type:
-        db.delete(deleted_type)
-        db.commit()
-        return {"Type deleted"}
-    return {"Not Founded"}
+#     deleted_type = db.query(ToolingType).filter(ToolingType.id == id).first()
+#     if deleted_type:
+#         db.delete(deleted_type)
+#         db.commit()
+#         return {"Type deleted"}
+#     return {"Not Founded"}

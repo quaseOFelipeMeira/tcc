@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from . import requestType, toolingType, productType, tooling, client, dateCF
+from . import requestType, toolingType, productType, tooling, client, dateCF, dateBP
 
 
 router = APIRouter(prefix="/v1")
@@ -10,3 +10,4 @@ router.include_router(toolingType.router)
 router.include_router(productType.router)
 router.include_router(client.router)
 router.include_router(dateCF.router)
+router.include_router(dateBP.router)

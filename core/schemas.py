@@ -46,16 +46,35 @@ class toolingSchema(BaseModel):
     date_sop: date
 
 
-class dateCF(BaseModel):
+class dateSchema(BaseModel):
     desc: str
     date_exp: date
+
+
+class datePatchSchema(BaseModel):
+    date_exp: date
+
+
+class dateResponseSchema(dateSchema):
+    id: int
+
+
+class bpcfSchema(BaseModel):
+    date_bp: date
+    date_cf1: date
+    date_cf2: date
+    date_cf3: date
+
+
+class bpcfResponseSchema(dateSchema):
+    cf_bp: Optional[List[dateResponseSchema]] = None
 
 
 class toolingResponseSchema(toolingSchema):
     id: int
     was_approved: Optional[bool] = None
     request: descSchema
-    bp: int
+    bp: Optional[descSchema] = None
     cf: Optional[descSchema] = None
     date_input: date
     date_request: date

@@ -1,8 +1,14 @@
 """ File to define endpoints for setup the application
 """
 
-from core.models import ToolingType, RequestType, ProductType, Client, DateCF, Tooling
-from sqlalchemy.orm import Session
+from core.models import (
+    ToolingType,
+    RequestType,
+    ProductType,
+    Client,
+    DateCF,
+    DateBP,
+)
 from datetime import date
 from core.database import SessionLocal
 
@@ -37,49 +43,16 @@ dateCFs = [
     {"desc": "07", "date_exp": date(2024, 7, 30)},
 ]
 
-toolings = [
-    {
-        "project": "string",
-        "client": {
-            "name": "Volkswagen",
-        },
-        "part_number": "12211823996",
-        "RBSNO": "2441122404",
-        "price": 33474.6,
-        "product": {
-            "desc": "Gallery injection",
-            "cost_center": "AA",
-        },
-        "tooling_t": {
-            "desc": "Ferramental de estampo",
-        },
-        "date_request": date(2024, 10, 21),
-        "date_sop": date(2025, 2, 15),
-    },
-    {
-        "project": "string",
-        "client": {
-            "name": "Fiat",
-        },
-        "part_number": "228139132207",
-        "RBSNO": "160145192122",
-        "price": 61918.52,
-        "product": {
-            "desc": "New Product",
-            "cost_center": "DD",
-        },
-        "tooling_t": {
-            "desc": "Molde de injeção de alumínio",
-        },
-        "date_request": date(2024, 4, 3),
-        "date_sop": date(2024, 12, 28),
-    }
+dateBPs = [
+    {"desc": "24", "date_exp": date(2024, 3, 30)},
+    {"desc": "25", "date_exp": date(2025, 9, 22)},
 ]
 
 
 def add_toolingTypes():
     db = SessionLocal()
     for item in toolingTypes:
+        print(item["desc"] + "\t\t added")
         obj = ToolingType(desc=item["desc"])
         db.add(obj)
     db.commit()
@@ -89,6 +62,7 @@ def add_toolingTypes():
 def add_requestTypes():
     db = SessionLocal()
     for item in requestTypes:
+        print(item["desc"] + "\t\t added")
         obj = RequestType(desc=item["desc"])
         db.add(obj)
     db.commit()
@@ -98,6 +72,7 @@ def add_requestTypes():
 def add_productTypes():
     db = SessionLocal()
     for item in productTypes:
+        print(item["desc"] + "\t\t added")
         obj = ProductType(
             desc=item["desc"],
             cost_center=item["cost_center"],
@@ -110,6 +85,7 @@ def add_productTypes():
 def add_clients():
     db = SessionLocal()
     for item in clients:
+        print(item["name"] + "\t\t added")
         obj = Client(
             name=item["name"],
         )
@@ -121,7 +97,21 @@ def add_clients():
 def add_dateCFs():
     db = SessionLocal()
     for item in dateCFs:
+        print(item["desc"] + "\t\t added")
         obj = DateCF(
+            desc=item["desc"],
+            date_exp=item["date_exp"],
+        )
+        db.add(obj)
+    db.commit()
+    db.refresh(obj)
+
+
+def add_dateBPs():
+    db = SessionLocal()
+    for item in dateBPs:
+        print(item["desc"] + "\t\t added")
+        obj = DateBP(
             desc=item["desc"],
             date_exp=item["date_exp"],
         )
@@ -136,3 +126,4 @@ if __name__ == "__main__":
     add_requestTypes()
     add_clients()
     add_dateCFs()
+    add_dateBPs()

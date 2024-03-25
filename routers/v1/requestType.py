@@ -55,12 +55,12 @@ def update(id: int, request: descResponseSchema, db: Session = Depends(get_db), 
     return request
 
 
-@router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+# @router.delete("/{id}")
+# def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
 
-    deleted_type = db.query(RequestType).filter(RequestType.id == id).first()
-    if deleted_type:
-        db.delete(deleted_type)
-        db.commit()
-        return {"Type deleted"}
-    return {"Not Founded"}
+#     deleted_type = db.query(RequestType).filter(RequestType.id == id).first()
+#     if deleted_type:
+#         db.delete(deleted_type)
+#         db.commit()
+#         return {"Type deleted"}
+#     return {"Not Founded"}

@@ -15,10 +15,11 @@ from core.models import (
     Tooling,
     RequestType,
     ToolingUpdates,
-    DateCF,
     ToolingType,
     ProductType,
     Client,
+    DateCF,
+    DateBP,
 )
 
 from core.schemas import (
@@ -40,22 +41,38 @@ router = APIRouter(
 
 
 def set_status_description(request: toolingSchema, db: Session):
-    # Method to return the date status description - BP00CF00
+    # Method to return the date status description
+
     cf03 = db.query(DateCF).filter(DateCF.desc == "03").first()
     cf05 = db.query(DateCF).filter(DateCF.desc == "05").first()
     cf07 = db.query(DateCF).filter(DateCF.desc == "07").first()
 
-    if request.date_sop.year > date.today().year:
-        return str(request.date_sop.year)[2:], None
+    str_sop_date = str(request.date_sop.year)[2:]
+    bp_id = db.query(DateBP).filter(DateBP.desc == str_sop_date).first().id
 
-    if request.date_request < cf03.date_exp:
-        return str(request.date_sop.year)[2:], cf03.id
-    elif request.date_request < cf05.date_exp:
-        return str(request.date_sop.year)[2:], cf05.id
-    elif request.date_request < cf07.date_exp:
-        return str(request.date_sop.year)[2:], cf07.id
+    # Condition if the sop date of the tooling is for the next year
+    if request.date_sop.year == date.today().year + 1:
+        cf_id = None
+
+    # Condition if the sop date of the tooling is before the first cf
+    elif request.date_sop < cf03.date_exp:
+        cf_id = cf03.id
+
+    # Condition if the sop date of the tooling is before the second cf
+    elif request.date_sop < cf05.date_exp:
+        cf_id = cf05.id
+
+    # Condition if the sop date of the tooling is before the third cf
+    elif request.date_sop < cf07.date_exp:
+        cf_id = cf07.id
+
     else:
-        return str(request.date_sop.year + 1)[2:], None
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="Invalid information",
+        )
+
+    return bp_id, cf_id
 
 
 def set_client_description(request: toolingSchema, db: Session):
@@ -163,7 +180,7 @@ def add(
         date_request=request.date_request,
         date_sop=request.date_sop,
         RBSNO=request.RBSNO,
-        bp=bp,
+        bp_id=bp,
         cf_id=cf,
     )
 
@@ -199,21 +216,23 @@ def update(
             )
         )
 
-
     # Verifying if the tooling is able to be modified
     if tooling.was_approved == True:
+
         today = date.today()
-        
-        if (str(tooling.bp) == str(today.year)[2:4]): 
+        bp_date = db.query(DateBP).filter_by(id=tooling.bp.id).first()
+        cf_date = db.query(DateCF).filter_by(id=tooling.cf_id).first()
 
-            cf_date = db.query(DateCF).filter_by(id= tooling.cf_id).first()
+        exception = HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Não é possível alterar esse tooling",
+        )
 
-            if (tooling.cf_id and cf_date.date_exp < today):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Não é possível alterar esse tooling",
-                )
-            
+        if bp_date.date_exp < today:
+            raise exception
+
+        if tooling.cf_id and cf_date.date_exp < today:
+            raise exception
 
     tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
     product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
@@ -221,6 +240,9 @@ def update(
 
     bp, cf = set_status_description(request, db)
     client = set_client_description(request, db)
+
+    print(tooling_type)
+    print(dir(tooling_type))
 
     tooling_updated = ToolingUpdates(
         tooling_fk=tooling.id,
@@ -288,15 +310,15 @@ def update_status(
     id: int,
     request: statusSchema,
     db: Session = Depends(get_db),
-    # user=Depends(get_current_user_azure),
+    user=Depends(get_current_user_azure),
 ):
-    # if not user.get("roles")[0] == "PPS":
-    #     raise (
-    #         HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="Você não está autorizado a fazer essa requisição",
-    #         )
-    #     )
+    if not user.get("roles")[0] == "PPS":
+        raise (
+            HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Você não está autorizado a fazer essa requisição",
+            )
+        )
 
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
 
@@ -311,13 +333,13 @@ def update_status(
     return tooling
 
 
-@router.delete("/{id}")
-def delete(
-    id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
-):
-    deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
-    if deleted_type:
-        db.delete(deleted_type)
-        db.commit()
-        return {"Type deleted"}
-    return {"Not Founded"}
+# @router.delete("/{id}")
+# def delete(
+#     id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
+# ):
+#     deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
+#     if deleted_type:
+#         db.delete(deleted_type)
+#         db.commit()
+#         return {"Type deleted"}
+#     return {"Not Founded"}
