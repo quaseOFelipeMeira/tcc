@@ -66,6 +66,9 @@ def set_status_description(request: toolingSchema, db: Session):
     elif request.date_sop < cf07.date_exp:
         cf_id = cf07.id
 
+    elif request.date_sop >= cf07.date_exp:
+        cf_id = None
+
     else:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
@@ -276,7 +279,7 @@ def update(
     return dicionario
 
 
-@router.post("/{id}/part-number")
+@router.patch("/{id}/part-number")
 def update_part_number(
     id: int,
     request: partNumberSchema,
@@ -305,7 +308,7 @@ def update_part_number(
     return request
 
 
-@router.post("/{id}/status")
+@router.patch("/{id}/status")
 def update_status(
     id: int,
     request: statusSchema,
