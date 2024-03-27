@@ -201,6 +201,7 @@ def update(
     db: Session = Depends(get_db),
     user=Depends(get_current_user_azure),
 ):
+    
     query = db.query(Tooling).filter(Tooling.id == id)
     tooling: Tooling = query.first()
 
@@ -244,9 +245,6 @@ def update(
     bp, cf = set_status_description(request, db)
     client = set_client_description(request, db)
 
-    print(tooling_type)
-    print(dir(tooling_type))
-
     tooling_updated = ToolingUpdates(
         tooling_fk=tooling.id,
         project=tooling.project,
@@ -273,7 +271,7 @@ def update(
     dicionario["product_type"] = product_type.id
     dicionario["tooling_type"] = tooling_type.id
     dicionario["cf_id"] = cf
-    dicionario["bp"] = bp
+    dicionario["bp_id"] = bp
     query.update(dicionario)
     db.commit()
     return dicionario
