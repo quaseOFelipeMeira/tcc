@@ -91,17 +91,103 @@ def set_client_description(request: toolingSchema, db: Session):
 
     return client
 
+########## NEEEEDD TO FIXX 
+def set_query(bp_search, cf_search, role, db):
+    bp = db.query(DateBP).filter(DateBP.desc == bp_search).first()
+    cf = db.query(DateCF).filter(DateCF.desc == cf_search).first()
+
+    if not bp or not cf:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid BP/CF",
+        )
+
+    if role == "RPP":
+        if bp and cf:
+            return (
+                select(Tooling)
+                .filter(and_(Tooling.bp_id == bp.id, Tooling.cf_id == cf.id))
+                .order_by(Tooling.id),
+            )
+        elif bp:
+            return (
+                select(Tooling)
+                .filter(and_(Tooling.bp_id == bp.id))
+                .order_by(Tooling.id),
+            )
+
+        return select(Tooling).filter(Tooling.bp_id == bp.id).order_by(Tooling.id)
+    else:
+        request_type = (
+            db.query(RequestType)
+            .filter(RequestType.desc == role)
+            .first()
+        )
+        if bp and cf:
+            return (
+                select(Tooling)
+                .filter(
+                    and_(
+                        Tooling.request_type == request_type.id,
+                        Tooling.bp_id == bp.id,
+                        Tooling.cf_id == cf.id,
+                    )
+                )
+                .order_by(Tooling.id),
+            )
+        elif bp:
+            return (
+                select(Tooling)
+                .filter(
+                    and_(
+                        Tooling.requested_by == role,
+                        Tooling.bp_id == bp.id,
+                    )
+                )
+                .order_by(Tooling.id),
+            )
+
+        return select(Tooling).filter(Tooling.bp_id == bp.id).order_by(Tooling.id)
+
 
 @router.get("", response_model=Page[toolingResponseSchema])
 async def get_all(
-    db: Session = Depends(get_db), user=Depends(get_current_user_azure)
+    db: Session = Depends(get_db),
+    bp_search: str = "",
+    cf_search: str = "",
+    user=Depends(get_current_user_azure),
 ) -> Page[toolingResponseSchema]:
     if user.get("roles")[0] == "PPS":
+
+        if bp_search and cf_search:
+            bp = db.query(DateBP).filter(DateBP.desc == bp_search).first()
+            cf = db.query(DateCF).filter(DateCF.desc == cf_search).first()
+
+            if not bp or not cf:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Invalid BP/CF",
+                )
+
+            return paginate(
+                db,
+                select(Tooling)
+                .filter(and_(Tooling.bp_id == bp.id, Tooling.cf_id == cf.id))
+                .order_by(Tooling.id),
+            )
+
+        elif bp_search:
+            bp = db.query(DateBP).filter(DateBP.desc == bp).first()
+            return paginate(
+                db, select(Tooling).filter(Tooling.bp_id == bp.id).order_by(Tooling.id)
+            )
+
         return paginate(db, select(Tooling).order_by(Tooling.id))
 
     request_type = (
         db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
     )
+
     return paginate(
         db,
         select(Tooling)
