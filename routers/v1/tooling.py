@@ -43,39 +43,39 @@ router = APIRouter(
 def set_status_description(request: toolingSchema, db: Session):
     # Method to return the date status description
 
-    cf03 = db.query(DateCF).filter(DateCF.desc == "03").first()
-    cf05 = db.query(DateCF).filter(DateCF.desc == "05").first()
-    cf07 = db.query(DateCF).filter(DateCF.desc == "07").first()
+    today = date.today()
+    request.date_sop = date(2024, 11, 1)
 
-    str_sop_date = str(request.date_sop.year)[2:]
-    bp_id = db.query(DateBP).filter(DateBP.desc == str_sop_date).first().id
+    # Getting the BP of the sop year
+    bp = db.query(DateBP).filter(DateBP.desc == f"{request.date_sop.year}"[2:]).first()
 
-    # Condition if the sop date of the tooling is for the next year
-    if request.date_sop.year == date.today().year + 1:
-        cf_id = None
-
-    # Condition if the sop date of the tooling is before the first cf
-    elif request.date_sop < cf03.date_exp:
-        cf_id = cf03.id
-
-    # Condition if the sop date of the tooling is before the second cf
-    elif request.date_sop < cf05.date_exp:
-        cf_id = cf05.id
-
-    # Condition if the sop date of the tooling is before the third cf
-    elif request.date_sop < cf07.date_exp:
-        cf_id = cf07.id
-
-    elif request.date_sop >= cf07.date_exp:
-        cf_id = None
-
-    else:
+    if not bp:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail="Invalid information",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid BP",
         )
 
-    return bp_id, cf_id
+    # In case, input date before BP expiration date
+    if today <= bp.date_exp:
+        return bp.id, None
+
+    # Getting all the related CFs
+    cf_list = db.query(DateCF).filter(DateCF.bp == bp.id).all()
+
+    if not cf_list or len(cf_list) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="INVALID CFs for this BP",
+        )
+
+    for cf in cf_list:
+        if today < cf.date_exp:
+            return bp.id, cf.id
+
+    raise HTTPException(
+        status_code=status.HTTP_418_IM_A_TEAPOT,
+        detail="You cannot request a tooling, for this year after all CFs close",
+    )
 
 
 def set_client_description(request: toolingSchema, db: Session):
@@ -201,7 +201,7 @@ def update(
     db: Session = Depends(get_db),
     user=Depends(get_current_user_azure),
 ):
-    
+
     query = db.query(Tooling).filter(Tooling.id == id)
     tooling: Tooling = query.first()
 

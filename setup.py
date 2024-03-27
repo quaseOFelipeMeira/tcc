@@ -39,17 +39,15 @@ clients = [
 ]
 
 dateCFs = [
-    {"desc": "03", "date_exp": date(2024, 3, 30), "bp": 1},
+    {"desc": "02", "date_exp": date(2024, 2, 27), "bp": 1},
     {"desc": "05", "date_exp": date(2024, 5, 30), "bp": 1},
-    {"desc": "07", "date_exp": date(2024, 7, 30), "bp": 1},
-    {"desc": "03", "date_exp": date(2024, 3, 30), "bp": 2},
-    {"desc": "05", "date_exp": date(2024, 5, 30), "bp": 2},
-    {"desc": "07", "date_exp": date(2024, 7, 30), "bp": 2},
+    {"desc": "09", "date_exp": date(2024, 9, 30), "bp": 1},
+    {"desc": "02", "date_exp": date(2025, 2, 27), "bp": 2},
 ]
 
 dateBPs = [
-    {"desc": "24", "date_exp": date(2024, 3, 30)},
-    {"desc": "25", "date_exp": date(2025, 9, 22)},
+    {"desc": "24", "date_exp": date(2023, 9, 30)},
+    {"desc": "25", "date_exp": date(2024, 9, 30)},
 ]
 
 toolings = [
