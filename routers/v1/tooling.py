@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 
 from core.database import get_db
 from core.models import (
@@ -65,7 +65,7 @@ def set_status_description(request: toolingSchema, db: Session):
     if not cf_list or len(cf_list) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="INVALID CFs for this BP",
+            detail="Invalid CFs for this BP",
         )
 
     for cf in cf_list:
@@ -187,7 +187,14 @@ async def get_all(
             bp_search=bp_search,
             cf_search=cf_search,
             user=user,
-        ).filter(Tooling.project.contains(tooling_search))
+        )
+        .filter(
+            or_(
+                Tooling.project.contains(tooling_search),
+                Tooling.part_number.contains(tooling_search),
+                Tooling.requested_by.contains(tooling_search),
+            )
+        )
         .order_by(-Tooling.id),
     )
 
@@ -208,7 +215,7 @@ def get_by_id(
     if not search_tooling:
         raise (
             HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling não encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling not founded"
             )
         )
 
@@ -221,7 +228,7 @@ def get_by_id(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a ver essa informação",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -236,7 +243,7 @@ def add(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -285,7 +292,7 @@ def update(
     if not tooling:
         raise (
             HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling não encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling not founded"
             )
         )
 
@@ -306,7 +313,7 @@ def update(
 
         exception = HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Não é possível alterar esse tooling",
+            detail="Is not possible update this tooling",
         )
 
         if bp_date.date_exp < today:
@@ -365,7 +372,7 @@ def update_part_number(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this request",
             )
         )
 
@@ -374,7 +381,7 @@ def update_part_number(
     if not tooling:
         raise (
             HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling não encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling not found"
             )
         )
 
@@ -394,7 +401,7 @@ def update_status(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this request",
             )
         )
 

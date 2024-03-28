@@ -28,7 +28,7 @@ router = APIRouter(
 #         raise (
 #             HTTPException(
 #                 status_code=status.HTTP_401_UNAUTHORIZED,
-#                 detail="Você não está autorizado a fazer essa requisição",
+#                 detail="You are not authorized to this information",
 #             )
 #         )
 
@@ -46,7 +46,7 @@ def get_one(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -90,7 +90,7 @@ def update_date(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -100,7 +100,7 @@ def update_date(
     if not cf_to_update:
         raise (
             HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="CF não encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="CF not founded"
             )
         )
 

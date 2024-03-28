@@ -37,7 +37,7 @@ def get_all(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -55,7 +55,7 @@ def get_one(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -73,7 +73,7 @@ def add(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
@@ -124,7 +124,7 @@ def update_date(
         raise (
             HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não está autorizado a fazer essa requisição",
+                detail="You are not authorized to this information",
             )
         )
 
