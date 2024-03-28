@@ -91,63 +91,98 @@ def set_client_description(request: toolingSchema, db: Session):
 
     return client
 
-########## NEEEEDD TO FIXX 
-def set_query(bp_search, cf_search, role, db):
-    bp = db.query(DateBP).filter(DateBP.desc == bp_search).first()
-    cf = db.query(DateCF).filter(DateCF.desc == cf_search).first()
 
-    if not bp or not cf:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invalid BP/CF",
-        )
+def set_query(bp_search: str, cf_search: str, user, db: Session):
 
-    if role == "RPP":
-        if bp and cf:
-            return (
-                select(Tooling)
-                .filter(and_(Tooling.bp_id == bp.id, Tooling.cf_id == cf.id))
-                .order_by(Tooling.id),
-            )
-        elif bp:
-            return (
-                select(Tooling)
-                .filter(and_(Tooling.bp_id == bp.id))
-                .order_by(Tooling.id),
-            )
+    # Setting variables
+    preferred_username = user.get("preferred_username")
+    role = user.get("roles")[0]
 
-        return select(Tooling).filter(Tooling.bp_id == bp.id).order_by(Tooling.id)
-    else:
-        request_type = (
-            db.query(RequestType)
-            .filter(RequestType.desc == role)
-            .first()
-        )
+    exception_not_found = HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    bp = None
+    cf = None
+
+    # In case a BP is searched
+    if bp_search:
+        bp = db.query(DateBP).filter(DateBP.desc == bp_search).first()
+        if not bp:
+            raise exception_not_found
+
+        # In case a CF is searched
+        if cf_search:
+            cf = db.query(DateCF).filter(DateCF.desc == cf_search).first()
+            if not bp:
+                raise exception_not_found
+
+    # In case of user role is PPS, it must show all toolings
+    if role == "PPS":
+
+        # Searching by BP and CF:
         if bp and cf:
             return (
                 select(Tooling)
                 .filter(
                     and_(
-                        Tooling.request_type == request_type.id,
                         Tooling.bp_id == bp.id,
                         Tooling.cf_id == cf.id,
                     )
                 )
-                .order_by(Tooling.id),
+                .order_by(Tooling.id)
             )
+
+        # Searching by only BP
         elif bp:
             return (
                 select(Tooling)
                 .filter(
                     and_(
-                        Tooling.requested_by == role,
                         Tooling.bp_id == bp.id,
                     )
                 )
-                .order_by(Tooling.id),
+                .order_by(Tooling.id)
             )
 
-        return select(Tooling).filter(Tooling.bp_id == bp.id).order_by(Tooling.id)
+        # In case neither BP or CF was searched, getting all
+        return select(Tooling).order_by(Tooling.id)
+
+    # In case of user role is not PPS, searching only for
+    else:
+
+        # Verifying if user is from ICT or RPP
+        request_type = db.query(RequestType).filter(RequestType.desc == role).first()
+
+        # Searching by BP and CF:
+        if bp and cf:
+            return (
+                select(Tooling)
+                .filter(
+                    and_(
+                        Tooling.bp_id == bp.id,
+                        Tooling.cf_id == cf.id,
+                        Tooling.request_type == request_type.id,
+                        Tooling.requested_by == preferred_username,
+                    )
+                )
+                .order_by(Tooling.id)
+            )
+
+        # Searching by only BP
+        elif bp:
+            return (
+                select(Tooling)
+                .filter(
+                    and_(
+                        Tooling.bp_id == bp.id,
+                        Tooling.request_type == request_type.id,
+                        Tooling.requested_by == preferred_username,
+                    )
+                )
+                .order_by(Tooling.id)
+            )
+
+        # In case neither BP or CF was searched, getting all
+        return select(Tooling).order_by(Tooling.id)
 
 
 @router.get("", response_model=Page[toolingResponseSchema])
@@ -157,47 +192,14 @@ async def get_all(
     cf_search: str = "",
     user=Depends(get_current_user_azure),
 ) -> Page[toolingResponseSchema]:
-    if user.get("roles")[0] == "PPS":
-
-        if bp_search and cf_search:
-            bp = db.query(DateBP).filter(DateBP.desc == bp_search).first()
-            cf = db.query(DateCF).filter(DateCF.desc == cf_search).first()
-
-            if not bp or not cf:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Invalid BP/CF",
-                )
-
-            return paginate(
-                db,
-                select(Tooling)
-                .filter(and_(Tooling.bp_id == bp.id, Tooling.cf_id == cf.id))
-                .order_by(Tooling.id),
-            )
-
-        elif bp_search:
-            bp = db.query(DateBP).filter(DateBP.desc == bp).first()
-            return paginate(
-                db, select(Tooling).filter(Tooling.bp_id == bp.id).order_by(Tooling.id)
-            )
-
-        return paginate(db, select(Tooling).order_by(Tooling.id))
-
-    request_type = (
-        db.query(RequestType).filter(RequestType.desc == user.get("roles")[0]).first()
-    )
-
     return paginate(
         db,
-        select(Tooling)
-        .filter(
-            and_(
-                Tooling.request_type == request_type.id,
-                Tooling.requested_by == user["preferred_username"],
-            )
-        )
-        .order_by(Tooling.id),
+        set_query(
+            db=db,
+            bp_search=bp_search,
+            cf_search=cf_search,
+            user=user,
+        ),
     )
 
 
