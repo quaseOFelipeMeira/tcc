@@ -120,31 +120,23 @@ def set_query(bp_search: str, cf_search: str, user, db: Session):
 
         # Searching by BP and CF:
         if bp and cf:
-            return (
-                select(Tooling)
-                .filter(
-                    and_(
-                        Tooling.bp_id == bp.id,
-                        Tooling.cf_id == cf.id,
-                    )
+            return select(Tooling).filter(
+                and_(
+                    Tooling.bp_id == bp.id,
+                    Tooling.cf_id == cf.id,
                 )
-                .order_by(Tooling.id)
             )
 
         # Searching by only BP
         elif bp:
-            return (
-                select(Tooling)
-                .filter(
-                    and_(
-                        Tooling.bp_id == bp.id,
-                    )
+            return select(Tooling).filter(
+                and_(
+                    Tooling.bp_id == bp.id,
                 )
-                .order_by(Tooling.id)
             )
 
         # In case neither BP or CF was searched, getting all
-        return select(Tooling).order_by(Tooling.id)
+        return select(Tooling)
 
     # In case of user role is not PPS, searching only for
     else:
@@ -154,44 +146,40 @@ def set_query(bp_search: str, cf_search: str, user, db: Session):
 
         # Searching by BP and CF:
         if bp and cf:
-            return (
-                select(Tooling)
-                .filter(
-                    and_(
-                        Tooling.bp_id == bp.id,
-                        Tooling.cf_id == cf.id,
-                        Tooling.request_type == request_type.id,
-                        Tooling.requested_by == preferred_username,
-                    )
+            return select(Tooling).filter(
+                and_(
+                    Tooling.bp_id == bp.id,
+                    Tooling.cf_id == cf.id,
+                    Tooling.request_type == request_type.id,
+                    Tooling.requested_by == preferred_username,
                 )
-                .order_by(Tooling.id)
             )
 
         # Searching by only BP
         elif bp:
-            return (
-                select(Tooling)
-                .filter(
-                    and_(
-                        Tooling.bp_id == bp.id,
-                        Tooling.request_type == request_type.id,
-                        Tooling.requested_by == preferred_username,
-                    )
+            return select(Tooling).filter(
+                and_(
+                    Tooling.bp_id == bp.id,
+                    Tooling.request_type == request_type.id,
+                    Tooling.requested_by == preferred_username,
                 )
-                .order_by(Tooling.id)
             )
 
         # In case neither BP or CF was searched, getting all
-        return select(Tooling).order_by(Tooling.id)
+        return select(Tooling)
 
 
 @router.get("", response_model=Page[toolingResponseSchema])
 async def get_all(
     db: Session = Depends(get_db),
+    tooling_search: str = "",
     bp_search: str = "",
     cf_search: str = "",
     user=Depends(get_current_user_azure),
 ) -> Page[toolingResponseSchema]:
+
+    # # Dummy User for tests:
+    # user = {"roles": ["PPS"], "preferred_username": "ct67ca@bosch.com"}
     return paginate(
         db,
         set_query(
@@ -199,7 +187,8 @@ async def get_all(
             bp_search=bp_search,
             cf_search=cf_search,
             user=user,
-        ),
+        ).filter(Tooling.project.contains(tooling_search))
+        .order_by(-Tooling.id),
     )
 
 
