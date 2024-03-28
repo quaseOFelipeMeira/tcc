@@ -3,16 +3,15 @@
 
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination import Page
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, select
-from typing import List
+from sqlalchemy import desc
 
 from core.database import get_db
 from core.models import DateBP, DateCF
+from core.exceptions import EXCEPTIONS
 from core.schemas import (
-    dateSchema,
     datePatchSchema,
     dateResponseSchema,
     bpcfSchema,
@@ -34,12 +33,7 @@ def get_all(
 ) -> Page[bpcfResponseSchema]:
 
     if user.get("roles")[0] != "PPS":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this information",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     dates = db.query(DateBP).order_by(desc(DateBP.id))
     return paginate(db, dates)
@@ -52,12 +46,7 @@ def get_one(
     user=Depends(get_current_user_azure),
 ):
     if user.get("roles")[0] != "PPS":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this information",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     dates = db.query(DateBP).filter(DateBP.id == id).first()
     return dates
@@ -70,12 +59,7 @@ def add(
     user=Depends(get_current_user_azure),
 ):
     if user.get("roles")[0] != "PPS":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this information",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     BP_desc = str(request.date_bp.year)[2:]
 
@@ -121,22 +105,13 @@ def update_date(
     user=Depends(get_current_user_azure),
 ):
     if user.get("roles")[0] != "PPS":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this information",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     query = db.query(DateBP).filter(DateBP.id == id)
     cf_to_update = query.first()
 
     if not cf_to_update:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="CF não encontrado"
-            )
-        )
+        raise EXCEPTIONS.BP.NOT_FOUND
 
     query.update(request.model_dump())
     db.commit()

@@ -1,15 +1,15 @@
 """ File to define endpoints for request Type ( ICT / RRP / TLM / ...)
 """
 
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter
 from fastapi.params import Depends
 from typing import List
 from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.models import Client
-from core.schemas import descSchema, descResponseSchema, clientSchema
-
+from core.schemas import clientSchema
+from core.exceptions import EXCEPTIONS
 from configs.deps import get_current_user_azure
 
 router = APIRouter(
@@ -29,10 +29,7 @@ def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure
 def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
     client = db.query(Client).filter(Client.id == id).first()
     if not client:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not Founded",
-        )
+        raise EXCEPTIONS.CLIENT.NOT_FOUND
 
     return client
 
@@ -54,10 +51,7 @@ def update(id: int, request: clientSchema, db: Session = Depends(get_db), user =
 
     client = db.query(Client).filter(Client.id == id)
     if not client:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not Founded",
-        )
+        raise EXCEPTIONS.CLIENT.NOT_FOUND
 
     if not client:
         pass
@@ -66,13 +60,3 @@ def update(id: int, request: clientSchema, db: Session = Depends(get_db), user =
     db.commit()
     return request
 
-
-# @router.delete("/{id}")
-# def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
-
-#     deleted_type = db.query(Client).filter(Client.id == id).first()
-#     if deleted_type:
-#         db.delete(deleted_type)
-#         db.commit()
-#         return {"Type deleted"}
-#     return {"Not Founded"}

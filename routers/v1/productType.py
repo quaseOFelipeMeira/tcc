@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from core.models import ProductType
 from core.schemas import productTypeSchema, productTypeResponseSchema
-
+from core.exceptions import EXCEPTIONS
 from configs.deps import get_current_user_azure
 
 router = APIRouter(
@@ -19,19 +19,30 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[productTypeResponseSchema])
-def get_all(db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def get_all(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
     types = db.query(ProductType).all()
     return types
 
 
 @router.get("/{id}", response_model=productTypeResponseSchema)
-def get_by_id(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def get_by_id(
+    id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
     types = db.query(ProductType).filter(ProductType.id == id).first()
     return types
 
 
 @router.post("", response_model=productTypeSchema)
-def add(request: productTypeSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def add(
+    request: productTypeSchema,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
 
     new_type = ProductType(
         desc=request.desc,
@@ -44,23 +55,17 @@ def add(request: productTypeSchema, db: Session = Depends(get_db), user = Depend
 
 
 @router.put("/{id}")
-def update(id: int, request: productTypeSchema, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
+def update(
+    id: int,
+    request: productTypeSchema,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_azure),
+):
 
     old_type = db.query(ProductType).filter(ProductType.id == id)
     if not old_type:
-        pass
+        raise EXCEPTIONS.PRODUCT_TYPE.NOT_FOUND
 
     old_type.update(request.model_dump())
     db.commit()
     return request
-
-
-# @router.delete("/{id}")
-# def delete(id: int, db: Session = Depends(get_db), user = Depends(get_current_user_azure)):
-
-#     deleted_type = db.query(ProductType).filter(ProductType.id == id).first()
-#     if deleted_type:
-#         db.delete(deleted_type)
-#         db.commit()
-#         return {"Type deleted"}
-#     return {"Not Founded"}

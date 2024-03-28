@@ -10,6 +10,7 @@ from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import select, and_, or_
 
+from core.exceptions import EXCEPTIONS
 from core.database import get_db
 from core.models import (
     Tooling,
@@ -50,10 +51,7 @@ def set_status_description(request: toolingSchema, db: Session):
     bp = db.query(DateBP).filter(DateBP.desc == f"{request.date_sop.year}"[2:]).first()
 
     if not bp:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid BP",
-        )
+        raise EXCEPTIONS.BP.NOT_FOUND
 
     # In case, input date before BP expiration date
     if today <= bp.date_exp:
@@ -63,19 +61,13 @@ def set_status_description(request: toolingSchema, db: Session):
     cf_list = db.query(DateCF).filter(DateCF.bp == bp.id).all()
 
     if not cf_list or len(cf_list) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid CFs for this BP",
-        )
+        raise EXCEPTIONS.CF.NOT_FOUND_RELATED_BP
 
     for cf in cf_list:
         if today < cf.date_exp:
             return bp.id, cf.id
 
-    raise HTTPException(
-        status_code=status.HTTP_418_IM_A_TEAPOT,
-        detail="You cannot request a tooling, for this year after all CFs close",
-    )
+    raise EXCEPTIONS.TOOLING.NO_STATUS_DESCRIPTION_AVAILABLE
 
 
 def set_client_description(request: toolingSchema, db: Session):
@@ -98,8 +90,6 @@ def set_query(bp_search: str, cf_search: str, user, db: Session):
     preferred_username = user.get("preferred_username")
     role = user.get("roles")[0]
 
-    exception_not_found = HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
     bp = None
     cf = None
 
@@ -107,13 +97,13 @@ def set_query(bp_search: str, cf_search: str, user, db: Session):
     if bp_search:
         bp = db.query(DateBP).filter(DateBP.desc == bp_search).first()
         if not bp:
-            raise exception_not_found
+            raise EXCEPTIONS.BP.NOT_FOUND
 
         # In case a CF is searched
         if cf_search:
             cf = db.query(DateCF).filter(DateCF.desc == cf_search).first()
             if not bp:
-                raise exception_not_found
+                raise EXCEPTIONS.CF.NOT_FOUND_RELATED_BP
 
     # In case of user role is PPS, it must show all toolings
     if role == "PPS":
@@ -213,11 +203,7 @@ def get_by_id(
     search_tooling = db.query(Tooling).filter(Tooling.id == id).first()
 
     if not search_tooling:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling not founded"
-            )
-        )
+        raise EXCEPTIONS.TOOLING.NOT_FOUND
 
     if (
         search_tooling.request_type == request_type.id
@@ -225,12 +211,7 @@ def get_by_id(
     ):
         return search_tooling
     else:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this information",
-            )
-        )
+        raise EXCEPTIONS.AUTHENTICATION.NOT_AUTHENTICATED
 
 
 @router.post("", response_model=toolingResponseSchema)
@@ -240,12 +221,7 @@ def add(
     user=Depends(get_current_user_azure),
 ):
     if user.get("roles")[0] == "PPS":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this information",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
     product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
@@ -290,19 +266,10 @@ def update(
     tooling: Tooling = query.first()
 
     if not tooling:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling not founded"
-            )
-        )
+        raise EXCEPTIONS.TOOLING.NOT_FOUND
 
     if not tooling.requested_by == user["preferred_username"]:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não está autorizado a fazer essa requisição",
-            )
-        )
+        raise EXCEPTIONS.TOOLING.REQUESTED_BY_OTHER_USER
 
     # Verifying if the tooling is able to be modified
     if tooling.was_approved == True:
@@ -311,16 +278,11 @@ def update(
         bp_date = db.query(DateBP).filter_by(id=tooling.bp.id).first()
         cf_date = db.query(DateCF).filter_by(id=tooling.cf_id).first()
 
-        exception = HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Is not possible update this tooling",
-        )
-
         if bp_date.date_exp < today:
-            raise exception
+            raise EXCEPTIONS.TOOLING.INVALID_UPDATE
 
         if tooling.cf_id and cf_date.date_exp < today:
-            raise exception
+            raise EXCEPTIONS.TOOLING.INVALID_UPDATE
 
     tooling_type = db.query(ToolingType).filter_by(desc=request.tooling_t.desc).first()
     product_type = db.query(ProductType).filter_by(desc=request.product.desc).first()
@@ -369,21 +331,12 @@ def update_part_number(
     user=Depends(get_current_user_azure),
 ):
     if not user.get("roles")[0] == "SO":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this request",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
 
     if not tooling:
-        raise (
-            HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tooling not found"
-            )
-        )
+        raise EXCEPTIONS.TOOLING.NOT_FOUND
 
     tooling.part_number = request.part_number
     db.commit()
@@ -398,17 +351,12 @@ def update_status(
     user=Depends(get_current_user_azure),
 ):
     if not user.get("roles")[0] == "PPS":
-        raise (
-            HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="You are not authorized to this request",
-            )
-        )
+        raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     tooling = db.query(Tooling).filter(Tooling.id == id).first()
 
     if not tooling:
-        pass
+        EXCEPTIONS.TOOLING.NOT_FOUND
 
     tooling.was_approved = request.status
     if request.status == False:
@@ -416,15 +364,3 @@ def update_status(
     db.commit()
     db.refresh(tooling)
     return tooling
-
-
-# @router.delete("/{id}")
-# def delete(
-#     id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
-# ):
-#     deleted_type = db.query(Tooling).filter(Tooling.id == id).first()
-#     if deleted_type:
-#         db.delete(deleted_type)
-#         db.commit()
-#         return {"Type deleted"}
-#     return {"Not Founded"}

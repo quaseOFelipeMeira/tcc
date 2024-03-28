@@ -1,7 +1,7 @@
 """ File to define endpoints for request Type ( ICT / RRP / TLM / ...)
 """
 
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter
 from fastapi.params import Depends
 from typing import List
 from sqlalchemy.orm import Session
