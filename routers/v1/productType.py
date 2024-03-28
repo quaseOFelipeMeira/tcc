@@ -34,6 +34,10 @@ def get_by_id(
     user=Depends(get_current_user_azure),
 ):
     types = db.query(ProductType).filter(ProductType.id == id).first()
+
+    if not types:
+        raise EXCEPTIONS.PRODUCT_TYPE.NOT_FOUND
+
     return types
 
 
@@ -63,6 +67,7 @@ def update(
 ):
 
     old_type = db.query(ProductType).filter(ProductType.id == id)
+    
     if not old_type:
         raise EXCEPTIONS.PRODUCT_TYPE.NOT_FOUND
 

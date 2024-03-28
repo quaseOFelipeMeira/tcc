@@ -35,6 +35,8 @@ def get_by_id(
     user=Depends(get_current_user_azure),
 ):
     types = db.query(RequestType).filter(RequestType.id == id).first()
+    if not types:
+        raise EXCEPTIONS.REQUEST_TYPE.NOT_FOUND
     return types
 
 
@@ -65,7 +67,7 @@ def update(
     old_type = db.query(RequestType).filter(RequestType.id == id)
 
     if not old_type:
-        raise EXCEPTIONS.PRODUCT_TYPE.NOT_FOUND
+        raise EXCEPTIONS.REQUEST_TYPE.NOT_FOUND
 
     old_type.update(request.model_dump())
     db.commit()

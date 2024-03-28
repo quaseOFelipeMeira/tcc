@@ -68,3 +68,15 @@ class EXCEPTIONS(Enum):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CF not Founded",
         )
+
+    class REQUEST_TYPE(Enum):
+        NOT_FOUND = HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="CF not Founded",
+        )
+
+    class TOOLING_TYPE(Enum):
+        NOT_FOUND = HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="CF not Founded",
+        )

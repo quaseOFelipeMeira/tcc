@@ -28,6 +28,10 @@ def get_one(
         raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
     dates = db.query(DateCF).filter(DateCF.id == id).first()
+    
+    if not dates:
+        raise EXCEPTIONS.CF.NOT_FOUND
+        
     return dates
 
 

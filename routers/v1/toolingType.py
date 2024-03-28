@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from core.models import ToolingType
 from core.schemas import descSchema, descResponseSchema
+from core.exceptions import EXCEPTIONS
 from configs.deps import get_current_user_azure
 
 router = APIRouter(
@@ -28,6 +29,10 @@ def get_by_id(
     id: int, db: Session = Depends(get_db), user=Depends(get_current_user_azure)
 ):
     types = db.query(ToolingType).filter(ToolingType.id == id).first()
+
+    if not types:
+        raise EXCEPTIONS.TOOLING_TYPE.NOT_FOUND
+
     return types
 
 

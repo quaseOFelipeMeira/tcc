@@ -53,9 +53,6 @@ def update(id: int, request: clientSchema, db: Session = Depends(get_db), user =
     if not client:
         raise EXCEPTIONS.CLIENT.NOT_FOUND
 
-    if not client:
-        pass
-
     client.update(request.model_dump())
     db.commit()
     return request

@@ -48,8 +48,12 @@ def get_one(
     if user.get("roles")[0] != "PPS":
         raise EXCEPTIONS.AUTHORIZATION.NOT_ENOUGH_PERMISSION
 
-    dates = db.query(DateBP).filter(DateBP.id == id).first()
-    return dates
+    dateBP = db.query(DateBP).filter(DateBP.id == id).first()
+
+    if not dateBP:
+        raise EXCEPTIONS.BP.NOT_FOUND
+
+    return dateBP
 
 
 @router.post("")
